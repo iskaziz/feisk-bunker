@@ -21,6 +21,7 @@ const editorStatus = document.querySelector('#editorStatus');
 const editorSelected = document.querySelector('#editorSelected');
 const editorValues = document.querySelector('#editorValues');
 const editorCopyButton = document.querySelector('#editorCopyButton');
+const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
 
@@ -138,11 +139,16 @@ function renderProps() {
     image.alt = prop.alt;
     image.draggable = false;
 
+    const moveHandle = document.createElement('span');
+    moveHandle.className = 'scene-prop__move-handle';
+    moveHandle.setAttribute('aria-hidden', 'true');
+
     const resizeHandle = document.createElement('span');
     resizeHandle.className = 'scene-prop__resize-handle';
     resizeHandle.setAttribute('aria-hidden', 'true');
 
     button.appendChild(image);
+    button.appendChild(moveHandle);
     button.appendChild(resizeHandle);
 
     button.addEventListener('click', (event) => {
@@ -157,6 +163,7 @@ function renderProps() {
     });
 
     button.addEventListener('pointerdown', (event) => handlePropPointerDown(event, prop.id));
+    moveHandle.addEventListener('pointerdown', (event) => handlePropPointerDown(event, prop.id));
     resizeHandle.addEventListener('pointerdown', (event) => handleResizePointerDown(event, prop.id));
 
     propsLayer.appendChild(button);
@@ -264,7 +271,7 @@ function toggleEditorMode(forceValue) {
   if (appState.editorMode) {
     closeInfoPanel();
     selectProp(appState.selectedPropId || FEISK_ASSETS.props[0].id);
-    updateEditorStatus('Editor mode enabled. Drag props to move. Pull the corner handle to resize.');
+    updateEditorStatus('Editor mode enabled. Drag props, or use the green corner handle to move. Pull the gold corner handle to resize.');
   } else {
     appState.selectedPropId = null;
     updateSelectedClass();
@@ -386,6 +393,20 @@ function handlePointerMove(event) {
   }
 }
 
+function getExportableAssets() {
+  return {
+    backgrounds: { ...FEISK_ASSETS.backgrounds },
+    props: FEISK_ASSETS.props.map((prop) => ({
+      ...prop,
+      x: round1(prop.x),
+      y: round1(prop.y),
+      width: round1(prop.width),
+      height: round1(prop.height),
+      zIndex: prop.zIndex
+    }))
+  };
+}
+
 function savePlacementToLocalStorage() {
   const placement = FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
     id,
@@ -441,6 +462,37 @@ function getPlacementExport() {
   }));
 
   return JSON.stringify(props, null, 2);
+}
+
+function getDataFileExport() {
+  return `/*
+  Feisk Productions Vault data file
+  Exported from the in-browser prop placement editor.
+
+  Position and size values are percentages relative to the 16:9 scene stage.
+  x/y mark the centre point of the clickable PNG on the stage.
+*/
+
+const FEISK_ASSETS = ${JSON.stringify(getExportableAssets(), null, 2)};
+`;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: 'text/javascript;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function downloadDataFile() {
+  savePlacementToLocalStorage();
+  downloadTextFile('data.js', getDataFileExport());
+  updateEditorStatus('Downloaded data.js with the current prop placement. Replace your existing data.js with this file.');
 }
 
 async function copyPlacement() {
@@ -549,6 +601,10 @@ function init() {
 
   if (editorCopyButton) {
     editorCopyButton.addEventListener('click', copyPlacement);
+  }
+
+  if (editorDownloadButton) {
+    editorDownloadButton.addEventListener('click', downloadDataFile);
   }
 
   if (editorResetButton) {
