@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feisk Productions Vault</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="app" class="app app--loading">
+    <!-- LOADING / VAULT ENTRY SCREEN -->
+    <section id="loadingScreen" class="screen loading-screen" aria-label="Feisk Productions vault entrance">
+      <div class="loading-atmosphere"></div>
+
+      <div class="signpost" aria-hidden="true">
+        <div class="signpost__pole"></div>
+        <div class="metal-sign">
+          <span class="metal-sign__small">WELCOME TO</span>
+          <span class="metal-sign__title">FEISK PRODUCTIONS</span>
+          <span class="metal-sign__sub">UNDERGROUND ARCHIVE</span>
+        </div>
+      </div>
+
+      <button id="hatchButton" class="vault-hatch" type="button" aria-label="Enter the bunker" disabled>
+        <span class="vault-hatch__rim"></span>
+        <span class="vault-hatch__door">
+          <span class="vault-hatch__wheel"></span>
+          <span class="vault-hatch__shine"></span>
+        </span>
+        <span class="vault-hatch__ladder" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </span>
+      </button>
+
+      <div class="loading-panel" role="status" aria-live="polite">
+        <div id="loadingText" class="loading-panel__text">Loading vault assets...</div>
+        <div class="loading-bar" aria-hidden="true">
+          <div id="loadingProgress" class="loading-bar__fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUNKER ROOM -->
+    <section id="bunkerScene" class="screen bunker-scene" aria-label="Feisk Productions bunker room">
+      <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room.png" alt="Feisk Productions bunker room" />
+      <div id="propsLayer" class="props-layer" aria-label="Interactive bunker objects"></div>
+    </section>
+
+    <!-- INFO PANEL -->
+    <aside id="infoPanel" class="info-panel" aria-hidden="true" aria-labelledby="infoTitle">
+      <button id="closePanelButton" class="info-panel__close" type="button" aria-label="Close information panel">×</button>
+      <p id="infoKicker" class="info-panel__kicker"></p>
+      <h2 id="infoTitle" class="info-panel__title"></h2>
+      <p id="infoBody" class="info-panel__body"></p>
+    </aside>
+
+    <div id="panelBackdrop" class="panel-backdrop" hidden></div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
