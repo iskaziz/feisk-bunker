@@ -1,0 +1,34 @@
+<!-- Place this near the top of <body>, before the bunker room/stage. -->
+<section id="loading-screen" class="loading-screen is-active">
+  <div class="loading-bg">
+    <img
+      src="assets/ui/feisk-sign.png"
+      alt="Feisk Productions"
+      class="feisk-sign"
+      draggable="false"
+    />
+
+    <button id="hatch-button" class="hatch-button" aria-label="Enter bunker">
+      <img
+        id="hatch-image"
+        src="assets/ui/hatch-closed.png"
+        alt=""
+        class="hatch-img"
+        draggable="false"
+      />
+    </button>
+
+    <div id="enter-prompt" class="enter-prompt">
+      Loading bunker assets...
+    </div>
+  </div>
+</section>
+
+<!-- Wrap your existing bunker stage with this, or add the id/class to your existing bunker container. -->
+<section id="bunker-screen" class="bunker-screen">
+  <!-- Existing bunker website/stage goes here. -->
+</section>
+
+<!-- Add these near the end of <body>. Adjust paths if needed. -->
+<link rel="stylesheet" href="css/loading-screen.css" />
+<script src="js/loading-screen.js"></script>
