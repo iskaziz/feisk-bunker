@@ -1,121 +1,103 @@
 /*
-  Feisk Productions Vault data file
-  Keep all clickable scene objects configured here.
+  Feisk Productions Bunker - Layer B Prop Placement
+  -------------------------------------------------
+  Coordinates are percentages relative to the 16:9 bunker stage.
+  Keep prop placement data-driven here instead of hard-coding item positions in CSS.
 
-  Position and size values are percentages relative to the 16:9 scene stage.
-  x/y mark the centre point of the clickable PNG on the stage.
+  Expected prop folder:
+  assets/props/
+    filing-cabinet.png
+    wall-safe.png
+    white-fluffy-rug.png
+    wall-mounted-lcd-monitors.png
+    old-desktop-computer.png
+    swivel-desk-chair.png
+    rotary-telephone.png
+    bookshelf.png
 */
 
-const FEISK_ASSETS = {
-  backgrounds: {
-    bunkerRoom: 'assets/backgrounds/bunker-room-background-reference.png',
-    bunkerPreview: 'assets/backgrounds/bunker-with-props-preview.png'
+const LAYER_B_PROPS = [
+  {
+    id: "filing-cabinet",
+    label: "Filing Cabinet",
+    src: "assets/props/filing-cabinet.png",
+    x: 2.4,
+    y: 40.5,
+    width: 10.2,
+    zIndex: 5,
+    panel: "archives"
   },
+  {
+    id: "wall-safe",
+    label: "Wall Safe",
+    src: "assets/props/wall-safe.png",
+    x: 20.6,
+    y: 42.5,
+    width: 10.4,
+    zIndex: 6,
+    panel: "vault"
+  },
+  {
+    id: "wall-mounted-lcd-monitors",
+    label: "LCD Monitors",
+    src: "assets/props/wall-mounted-lcd-monitors.png",
+    x: 36.6,
+    y: 29.4,
+    width: 20.7,
+    zIndex: 6,
+    panel: "screening-room"
+  },
+  {
+    id: "old-desktop-computer",
+    label: "Old Desktop Computer",
+    src: "assets/props/old-desktop-computer.png",
+    x: 42.0,
+    y: 56.3,
+    width: 16.5,
+    zIndex: 8,
+    panel: "computer-terminal"
+  },
+  {
+    id: "rotary-telephone",
+    label: "Rotary Telephone",
+    src: "assets/props/rotary-telephone.png",
+    x: 30.0,
+    y: 62.0,
+    width: 7.2,
+    zIndex: 8,
+    panel: "contact"
+  },
+  {
+    id: "swivel-desk-chair",
+    label: "Swivel Desk Chair",
+    src: "assets/props/swivel-desk-chair.png",
+    x: 38.4,
+    y: 65.0,
+    width: 14.8,
+    zIndex: 10,
+    panel: "director-chair"
+  },
+  {
+    id: "bookshelf",
+    label: "Bookshelf",
+    src: "assets/props/bookshelf.png",
+    x: 62.2,
+    y: 26.2,
+    width: 14.8,
+    zIndex: 5,
+    panel: "library"
+  },
+  {
+    id: "white-fluffy-rug",
+    label: "White Fluffy Rug",
+    src: "assets/props/white-fluffy-rug.png",
+    x: 14.0,
+    y: 75.3,
+    width: 70.5,
+    zIndex: 3,
+    panel: "hidden-floor"
+  }
+];
 
-  props: [
-    {
-      id: 'wall-mounted-lcd-monitors',
-      title: 'Feisk Screen Array',
-      kicker: 'Films / Platforms',
-      body: 'Feisk Productions has produced content for film, television and digital platforms, with feature films available across Netflix, Amazon Prime, VIU, Astro and Tubi. The monitors act as the bunker interface for trailers, stills and release notes.',
-      src: 'assets/props/wall-mounted-lcd-monitors.png',
-      alt: 'Clickable wall mounted LCD monitors',
-      x: 49.5,
-      y: 23.5,
-      width: 25,
-      height: 17,
-      zIndex: 13
-    },
-    {
-      id: 'wall-safe',
-      title: 'Locked Development Safe',
-      kicker: 'In Development',
-      body: 'The safe stores restricted files for Feisk projects and unreleased materials. Current archive notes include crime thriller Curi Makan, fantasy thriller Writers, desktop thriller Send Tudes, and satay-western Selendangs & Shotguns.',
-      src: 'assets/props/wall-safe.png',
-      alt: 'Clickable wall safe',
-      x: 75.7,
-      y: 35.2,
-      width: 9.2,
-      height: 13.5,
-      zIndex: 11
-    },
-    {
-      id: 'bookshelf',
-      title: 'Research Bookshelf',
-      kicker: 'Reference Archive',
-      body: 'A shelf of cinema books, treatment binders, research notes, festival catalogues, short-film references and odd props collected across years of independent production work.',
-      src: 'assets/props/bookshelf.png',
-      alt: 'Clickable bookshelf',
-      x: 86.9,
-      y: 58.5,
-      width: 18,
-      height: 41,
-      zIndex: 12
-    },
-    {
-      id: 'filing-cabinet',
-      title: 'Production Filing Cabinet',
-      kicker: 'Company Records',
-      body: 'Feisk Sdn Bhd was founded in December 2010 by brothers Iskander and Feisal Azizuddin. These drawers hold the paper trail: call sheets, scripts, grant notes, festival submissions, invoices and old production maps.',
-      src: 'assets/props/filing-cabinet.png',
-      alt: 'Clickable filing cabinet',
-      x: 17.2,
-      y: 62.7,
-      width: 13.8,
-      height: 34,
-      zIndex: 12
-    },
-    {
-      id: 'old-desktop-computer',
-      title: 'Old Desktop Computer',
-      kicker: 'Main Terminal',
-      body: 'The bunker terminal will eventually become the main interactive archive: films, biographies, project windows, hidden folders and contact access. For now, this prototype panel confirms the computer hotspot is working.',
-      src: 'assets/props/old-desktop-computer.png',
-      alt: 'Clickable old desktop computer',
-      x: 52.8,
-      y: 57.2,
-      width: 18.5,
-      height: 25,
-      zIndex: 16
-    },
-    {
-      id: 'rotary-telephone',
-      title: 'Rotary Telephone',
-      kicker: 'Contact Line',
-      body: 'A direct line to the surface. Feisk can be reached at get.creative@feisk.com.my for production enquiries, collaborations and archive access.',
-      src: 'assets/props/rotary-telephone.png',
-      alt: 'Clickable rotary telephone',
-      x: 65.4,
-      y: 62.2,
-      width: 8.5,
-      height: 11,
-      zIndex: 17
-    },
-    {
-      id: 'swivel-desk-chair',
-      title: 'Swivel Desk Chair',
-      kicker: 'The Producers\' Seat',
-      body: 'Iskander Azizuddin is a Malaysian film producer with more than 15 years of creative and media industry experience. Feisal Azizuddin is a filmmaker whose short films often explore Malaysian social issues through horror, thriller and dramatic forms.',
-      src: 'assets/props/swivel-desk-chair.png',
-      alt: 'Clickable swivel desk chair',
-      x: 42.8,
-      y: 69.8,
-      width: 14.5,
-      height: 29,
-      zIndex: 18
-    },
-    {
-      id: 'white-fluffy-rug',
-      title: 'White Fluffy Rug',
-      kicker: 'Festival Clue',
-      body: 'A strange soft patch in an otherwise hard concrete room. Hidden beneath it: a reminder that Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.',
-      src: 'assets/props/white-fluffy-rug.png',
-      alt: 'Clickable white fluffy rug',
-      x: 52.5,
-      y: 83.4,
-      width: 31,
-      height: 17,
-      zIndex: 10
-    }
-  ]
-};
+// Browser global fallback for non-module scripts.
+window.LAYER_B_PROPS = LAYER_B_PROPS;

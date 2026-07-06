@@ -1,0 +1,32 @@
+/*
+  Optional CSS helper for Layer B prop placement.
+  Use this if your JavaScript applies --x, --y, --w, and --z variables to each prop element.
+*/
+
+.prop,
+.bunker-prop,
+.layer-b-prop {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: auto;
+  z-index: var(--z);
+  transform-origin: center center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: filter 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.prop:hover,
+.bunker-prop:hover,
+.layer-b-prop:hover {
+  filter: drop-shadow(0 0 10px rgba(220, 245, 255, 0.45)) brightness(1.08);
+}
+
+.prop:active,
+.bunker-prop:active,
+.layer-b-prop:active {
+  transform: scale(0.985);
+}
