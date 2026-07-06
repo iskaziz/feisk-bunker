@@ -59,7 +59,9 @@ const appState = {
   dragState: null,
   resizeState: null,
   editorPanelDragState: null,
-  editorMinimized: false
+  editorMinimized: false,
+  portraitHasBeenCentered: false,
+  portraitUserHasPanned: false
 };
 
 function clamp(value, min, max) {
@@ -292,16 +294,32 @@ function checkMobileOrientation() {
   mobileOrientationPrompt.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
   sceneViewport.classList.toggle('scene-viewport--portrait-scroll', isPortraitMobile);
 
-  if (isPortraitMobile && appState.hasEntered) {
-    window.requestAnimationFrame(centerPortraitSceneIfNeeded);
+  if (!isPortraitMobile) {
+    appState.portraitHasBeenCentered = false;
+    appState.portraitUserHasPanned = false;
+    return;
+  }
+
+  // Only auto-centre once when the bunker first appears in portrait.
+  // Mobile browsers can fire resize events while the address bar collapses;
+  // repeated centering makes it feel like the user cannot pan fully left.
+  if (appState.hasEntered && !appState.portraitHasBeenCentered && !appState.portraitUserHasPanned) {
+    window.requestAnimationFrame(centerPortraitSceneOnce);
   }
 }
 
-function centerPortraitSceneIfNeeded() {
+function centerPortraitSceneOnce() {
   if (!sceneViewport.classList.contains('scene-viewport--portrait-scroll')) return;
   const maxScroll = sceneViewport.scrollWidth - sceneViewport.clientWidth;
-  if (maxScroll > 0 && sceneViewport.scrollLeft < 8) {
+  if (maxScroll > 0) {
     sceneViewport.scrollLeft = Math.round(maxScroll * 0.5);
+  }
+  appState.portraitHasBeenCentered = true;
+}
+
+function markPortraitUserPanned() {
+  if (sceneViewport.classList.contains('scene-viewport--portrait-scroll')) {
+    appState.portraitUserHasPanned = true;
   }
 }
 
@@ -592,7 +610,8 @@ function init() {
   continuePortraitButton.addEventListener('click', () => {
     appState.portraitBypass = true;
     checkMobileOrientation();
-    window.setTimeout(centerPortraitSceneIfNeeded, 50);
+    appState.portraitHasBeenCentered = false;
+    window.setTimeout(centerPortraitSceneOnce, 50);
   });
 
   editDoorHotspot.addEventListener('click', handleEditorDoorClick);
@@ -605,6 +624,9 @@ function init() {
 
   window.addEventListener('pointermove', handlePointerMove);
   window.addEventListener('pointerup', handlePointerUp);
+  sceneViewport.addEventListener('scroll', markPortraitUserPanned, { passive: true });
+  sceneViewport.addEventListener('pointerdown', markPortraitUserPanned, { passive: true });
+  sceneViewport.addEventListener('touchstart', markPortraitUserPanned, { passive: true });
   window.addEventListener('resize', checkMobileOrientation);
   window.addEventListener('orientationchange', () => window.setTimeout(checkMobileOrientation, 250));
   window.addEventListener('keydown', (event) => {

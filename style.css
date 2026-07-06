@@ -325,7 +325,7 @@ button {
 
   .scene-viewport--portrait-scroll {
     display: block;
-    overflow-x: auto;
+    overflow-x: scroll;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
     touch-action: pan-x pinch-zoom;
@@ -333,10 +333,12 @@ button {
   }
 
   .scene-viewport--portrait-scroll .scene-stage {
-    width: 177.7778svh;
+    display: block;
+    width: max(960px, calc(100svh * 1.7777778));
     height: 100svh;
     max-width: none;
     min-width: 960px;
+    margin: 0;
     touch-action: pan-x pinch-zoom;
   }
 
