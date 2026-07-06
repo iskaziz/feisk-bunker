@@ -1,0 +1,136 @@
+/* Feisk Productions hatch entry screen
+   Add this CSS after your existing style.css, or copy it into style.css. */
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(120, 120, 120, 0.18), transparent 38%),
+    linear-gradient(180deg, #080808 0%, #111 45%, #050505 100%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.loading-screen.is-active {
+  display: flex;
+}
+
+.loading-bg {
+  position: relative;
+  width: min(100vw, 1400px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.feisk-sign {
+  position: absolute;
+  left: 50%;
+  top: 7%;
+  width: 28%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 18px rgba(255, 185, 80, 0.22));
+  user-select: none;
+  pointer-events: none;
+}
+
+.hatch-button {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 31%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hatch-button:disabled {
+  cursor: wait;
+}
+
+.hatch-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter:
+    drop-shadow(0 22px 24px rgba(0, 0, 0, 0.7))
+    drop-shadow(0 0 14px rgba(180, 180, 180, 0.16));
+  transition:
+    transform 0.25s ease,
+    filter 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.hatch-button:not(:disabled):hover .hatch-img {
+  transform: scale(1.025);
+  filter:
+    drop-shadow(0 26px 26px rgba(0, 0, 0, 0.8))
+    drop-shadow(0 0 20px rgba(220, 220, 220, 0.25));
+}
+
+.hatch-button.is-opening .hatch-img {
+  transform: scale(1.04);
+}
+
+.enter-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 11%;
+  transform: translateX(-50%);
+  padding: 0.65rem 1.1rem;
+  color: #d7c79d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.8rem, 1.4vw, 1.15rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(210, 180, 110, 0.35);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
+  animation: promptPulse 1.8s ease-in-out infinite;
+  transition: opacity 0.25s ease;
+}
+
+@keyframes promptPulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+.bunker-screen {
+  display: none;
+}
+
+.bunker-screen.is-active {
+  display: block;
+}
+
+@media (orientation: portrait) {
+  .loading-bg {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+  }
+
+  .feisk-sign {
+    top: 10%;
+    width: 58%;
+  }
+
+  .hatch-button {
+    top: 46%;
+    width: 68%;
+  }
+
+  .enter-prompt {
+    bottom: 14%;
+    width: max-content;
+    max-width: 86vw;
+    text-align: center;
+  }
+}
