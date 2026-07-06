@@ -1,61 +1,65 @@
-FEISK PRODUCTIONS BUNKER PROTOTYPE - LAYER B ALIGNMENT PASS
+FEISK PRODUCTIONS BUNKER PROTOTYPE
+=================================
 
-Files:
-- index.html
-- style.css
-- script.js
-- data.js
-- data.layer-b-props.js
+This build integrates the image-based loading screen assets and keeps the bunker scene/editor data-driven.
 
-Asset folders expected:
-assets/backgrounds/
-  bunker-room-background-reference.png
-  bunker-with-props-preview.png
+MAIN FILES
+----------
+index.html
+style.css
+prop-placement.css
+script.js
+data.js
+data.layer-b-props.js
 
-assets/props/
-  filing-cabinet.png
-  wall-safe.png
-  white-fluffy-rug.png
-  wall-mounted-lcd-monitors.png
-  old-desktop-computer.png
-  swivel-desk-chair.png
-  rotary-telephone.png
-  bookshelf.png
+NEW LOADING SCREEN FILES
+------------------------
+css/loading-screen.css
+js/loading-screen.js
+snippets/loading-screen-snippet.html
 
-Important notes:
-1. Props are configured in data.js only.
-2. x/y/width/height are percentages of the 16:9 scene stage.
-3. The bunker scene now uses a 16:9 stage wrapper so prop placement stays locked to the reference image.
-4. Portrait mobile now shows a rotate prompt first. Users may continue in portrait, then horizontally drag/pan the widescreen room.
-5. Replace the approximate placement values in data.js after testing against the final exported background and final transparent PNG sizes.
-
-Deployment:
-Upload the contents of this folder to your GitHub Pages repository root.
-
-
-EDITOR MODE
------------
-After entering the bunker, triple-click the far-right door area to unlock the placement editor.
-
-In editor mode:
-- Click a prop to select it.
-- Drag the selected prop to move it.
-- Drag the small gold bottom-right handle to resize it.
-- Use arrow keys to nudge selected props. Hold Shift for larger nudges.
-- Click “Copy placement” to copy the updated x/y/width/height values.
-- The editor also saves temporary placement values to this browser via localStorage.
-
-Mobile panel fix:
-The information panel now has max-height, internal scrolling, smaller mobile typography, and safe-area spacing so it fits within portrait and landscape phone screens.
-
-EDITOR EXPORT UPDATE
+REQUIRED ASSET PATHS
 --------------------
-This version adds a “Download data.js” button inside the hidden editor.
-After moving/resizing props, click “Download data.js” and replace the existing data.js file in your GitHub Pages repository with the downloaded file.
+assets/ui/feisk-sign.png
+assets/ui/hatch-closed.png
+assets/ui/hatch-open.png
 
-Editor handles:
-- Green top-left handle: move prop. Useful on mobile where dragging the transparent PNG area can be awkward.
-- Gold bottom-right handle: resize prop.
+assets/backgrounds/bunker-room-background-reference.png
+assets/backgrounds/bunker-with-props-preview.png
 
-Portrait mobile panel update:
-The information panel is now fixed to the phone viewport in portrait mode and the body text scrolls inside the panel, so longer text should remain reachable.
+assets/props/filing-cabinet.png
+assets/props/wall-safe.png
+assets/props/white-fluffy-rug.png
+assets/props/wall-mounted-lcd-monitors.png
+assets/props/old-desktop-computer.png
+assets/props/swivel-desk-chair.png
+assets/props/rotary-telephone.png
+assets/props/bookshelf.png
+
+HOW IT WORKS
+------------
+1. index.html now uses the image-based loading screen markup from snippets/loading-screen-snippet.html.
+2. css/loading-screen.css positions the Feisk sign, closed hatch, and open hatch.
+3. js/loading-screen.js declares the UI assets so script.js preloads them before allowing entry.
+4. script.js still controls preload progress, entry transition, bunker scene, info panels, and the hidden editor.
+5. data.js remains the main source of truth for prop placement and panel content.
+
+HIDDEN EDITOR
+-------------
+After entering the bunker, triple-click the far-right door area to enable the placement editor.
+
+Editor controls:
+- Click a prop to select it.
+- Drag the prop or green top-left handle to move it.
+- Drag the gold bottom-right handle to resize it.
+- Arrow keys nudge selected prop.
+- Shift + arrow keys nudge selected prop faster.
+- Download data.js exports the current coordinates into a replacement data.js file.
+
+MOBILE
+------
+Portrait mobile shows a rotate-to-landscape prompt first. Users can continue in portrait, but landscape is recommended because the bunker is designed as a 16:9 point-and-click scene.
+
+UPLOAD NOTE
+-----------
+Upload the contents of this folder into the root of your GitHub Pages repository. Keep the asset filenames exactly as listed above.

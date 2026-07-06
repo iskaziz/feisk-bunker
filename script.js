@@ -53,7 +53,8 @@ function round1(value) {
 function getAllImageSources() {
   const backgroundSources = [FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
   const propSources = FEISK_ASSETS.props.map((prop) => prop.src);
-  return [...backgroundSources, ...propSources];
+  const loadingSources = window.FEISK_LOADING_SCREEN?.uiAssets || [];
+  return [...backgroundSources, ...propSources, ...loadingSources];
 }
 
 function preloadImage(src) {
