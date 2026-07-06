@@ -42,8 +42,21 @@
 
     <!-- BUNKER ROOM -->
     <section id="bunkerScene" class="screen bunker-scene" aria-label="Feisk Productions bunker room">
-      <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room.png" alt="Feisk Productions bunker room" />
-      <div id="propsLayer" class="props-layer" aria-label="Interactive bunker objects"></div>
+      <div id="sceneViewport" class="scene-viewport">
+        <div id="sceneStage" class="scene-stage">
+          <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room-background-reference.png" alt="Feisk Productions bunker room" />
+          <div id="propsLayer" class="props-layer" aria-label="Interactive bunker objects"></div>
+        </div>
+      </div>
+
+      <div id="mobileOrientationPrompt" class="mobile-orientation" aria-hidden="true">
+        <div class="mobile-orientation__card">
+          <div class="mobile-orientation__icon" aria-hidden="true">↻</div>
+          <h2>Rotate for the full bunker view</h2>
+          <p>This archive is designed like a widescreen point-and-click room. Landscape gives the best experience.</p>
+          <button id="continuePortraitButton" type="button">Continue in portrait</button>
+        </div>
+      </div>
     </section>
 
     <!-- INFO PANEL -->

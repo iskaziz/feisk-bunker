@@ -1,26 +1,33 @@
-FEISK PRODUCTIONS BUNKER PROTOTYPE - LAYER B INTEGRATION
+FEISK PRODUCTIONS BUNKER PROTOTYPE - LAYER B ALIGNMENT PASS
 
-Upload these files to your site root:
+Files:
 - index.html
 - style.css
 - script.js
 - data.js
+- data.layer-b-props.js
 
-Required assets:
-assets/backgrounds/bunker-room-background-reference.png
-assets/backgrounds/bunker-with-props-preview.png
-assets/props/filing-cabinet.png
-assets/props/wall-safe.png
-assets/props/white-fluffy-rug.png
-assets/props/wall-mounted-lcd-monitors.png
-assets/props/old-desktop-computer.png
-assets/props/swivel-desk-chair.png
-assets/props/rotary-telephone.png
-assets/props/bookshelf.png
+Asset folders expected:
+assets/backgrounds/
+  bunker-room-background-reference.png
+  bunker-with-props-preview.png
 
-Notes:
-- All clickable objects are configured in data.js.
-- x/y/width/height values are percentages relative to the full screen scene.
-- Use bunker-with-props-preview.png as a visual reference when adjusting positions.
-- The actual background used by the prototype is bunker-room-background-reference.png.
-- Missing placeholder assets do not block the prototype from entering the bunker during development.
+assets/props/
+  filing-cabinet.png
+  wall-safe.png
+  white-fluffy-rug.png
+  wall-mounted-lcd-monitors.png
+  old-desktop-computer.png
+  swivel-desk-chair.png
+  rotary-telephone.png
+  bookshelf.png
+
+Important notes:
+1. Props are configured in data.js only.
+2. x/y/width/height are percentages of the 16:9 scene stage.
+3. The bunker scene now uses a 16:9 stage wrapper so prop placement stays locked to the reference image.
+4. Portrait mobile now shows a rotate prompt first. Users may continue in portrait, then horizontally drag/pan the widescreen room.
+5. Replace the approximate placement values in data.js after testing against the final exported background and final transparent PNG sizes.
+
+Deployment:
+Upload the contents of this folder to your GitHub Pages repository root.
