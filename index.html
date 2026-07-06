@@ -2,55 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Feisk Productions Vault</title>
-  <link rel="stylesheet" href="style.css?v=20260706e" />
-  <link rel="stylesheet" href="css/loading-screen.css?v=20260706e" />
-  <link rel="stylesheet" href="prop-placement.css?v=20260706e" />
+  <link rel="stylesheet" href="style.css?v=hotspots1" />
+  <link rel="stylesheet" href="css/loading-screen.css?v=hotspots1" />
+  <link rel="stylesheet" href="prop-placement.css?v=hotspots1" />
 </head>
 <body>
   <main id="app" class="app app--loading">
-    <!-- LOADING / VAULT ENTRY SCREEN -->
-    <section id="loadingScreen" class="screen loading-screen loading-screen--image-assets" aria-label="Feisk Productions vault entrance">
+    <section id="loadingScreen" class="screen loading-screen" aria-label="Feisk Productions vault entrance">
+      <div class="loading-screen__bg" aria-hidden="true"></div>
       <div class="loading-screen__fog" aria-hidden="true"></div>
       <div class="loading-screen__grain" aria-hidden="true"></div>
 
-      <img
-        class="loading-sign-image"
-        src="assets/ui/feisk-sign.png"
-        alt="Feisk Productions"
-        draggable="false"
-      />
+      <img class="loading-sign-image" src="assets/ui/feisk-sign.png" alt="Feisk Productions" draggable="false" />
 
       <button id="hatchButton" class="loading-hatch-button" type="button" aria-label="Click the hatch to enter" disabled>
-        <img
-          class="loading-hatch-image loading-hatch-image--closed"
-          src="assets/ui/hatch-closed.png"
-          alt="Closed vault hatch"
-          draggable="false"
-        />
-        <img
-          class="loading-hatch-image loading-hatch-image--open"
-          src="assets/ui/hatch-open.png"
-          alt="Open vault hatch with ladder"
-          draggable="false"
-        />
+        <img class="loading-hatch-image loading-hatch-image--closed" src="assets/ui/hatch-closed.png" alt="Closed vault hatch" draggable="false" />
+        <img class="loading-hatch-image loading-hatch-image--open" src="assets/ui/hatch-open.png" alt="Open vault hatch with ladder" draggable="false" />
       </button>
 
       <div class="loading-panel" role="status" aria-live="polite">
         <div id="loadingText" class="loading-panel__text">Loading vault assets...</div>
-        <div class="loading-bar" aria-hidden="true">
-          <div id="loadingProgress" class="loading-bar__fill"></div>
-        </div>
+        <div class="loading-bar" aria-hidden="true"><div id="loadingProgress" class="loading-bar__fill"></div></div>
       </div>
     </section>
 
-    <!-- BUNKER ROOM -->
     <section id="bunkerScene" class="screen bunker-scene" aria-label="Feisk Productions bunker room">
       <div id="sceneViewport" class="scene-viewport">
         <div id="sceneStage" class="scene-stage">
-          <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room-background-reference.png" alt="Feisk Productions bunker room" />
-          <div id="propsLayer" class="props-layer" aria-label="Interactive bunker objects"></div>
+          <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room-final.png" alt="Feisk Productions bunker room" draggable="false" />
+          <div id="hotspotsLayer" class="hotspots-layer" aria-label="Interactive bunker hotspots"></div>
           <button id="editDoorHotspot" class="editor-door-hotspot" type="button" aria-label="Hidden editor access door"></button>
         </div>
       </div>
@@ -59,13 +41,12 @@
         <div class="mobile-orientation__card">
           <div class="mobile-orientation__icon" aria-hidden="true">↻</div>
           <h2>Rotate for the full bunker view</h2>
-          <p>This archive is designed like a widescreen point-and-click room. Landscape gives the best experience.</p>
+          <p>This archive is designed as a widescreen point-and-click room. Landscape gives the best experience.</p>
           <button id="continuePortraitButton" type="button">Continue in portrait</button>
         </div>
       </div>
     </section>
 
-    <!-- INFO PANEL -->
     <aside id="infoPanel" class="info-panel" aria-hidden="true" aria-labelledby="infoTitle">
       <button id="closePanelButton" class="info-panel__close" type="button" aria-label="Close information panel">×</button>
       <p id="infoKicker" class="info-panel__kicker"></p>
@@ -75,12 +56,11 @@
 
     <div id="panelBackdrop" class="panel-backdrop" hidden></div>
 
-    <!-- HIDDEN PROP PLACEMENT EDITOR -->
-    <section id="editorPanel" class="editor-panel" aria-label="Prop placement editor" hidden>
+    <section id="editorPanel" class="editor-panel" aria-label="Hotspot placement editor" hidden>
       <div class="editor-panel__header">
         <div>
-          <p class="editor-panel__kicker">Placement Editor</p>
-          <h2 id="editorSelected" class="editor-panel__title">No prop selected</h2>
+          <p class="editor-panel__kicker">Hotspot Editor</p>
+          <h2 id="editorSelected" class="editor-panel__title">No hotspot selected</h2>
         </div>
         <div class="editor-panel__window-controls">
           <button id="editorMinimizeButton" class="editor-panel__minimize" type="button" aria-label="Minimize editor">–</button>
@@ -88,7 +68,7 @@
         </div>
       </div>
 
-      <p id="editorStatus" class="editor-panel__status">Triple-click the far-right door to toggle this editor.</p>
+      <p id="editorStatus" class="editor-panel__status">Triple-click the far-right vault door to toggle this editor.</p>
       <pre id="editorValues" class="editor-panel__values"></pre>
 
       <div class="editor-panel__actions">
@@ -97,13 +77,12 @@
         <button id="editorResetButton" type="button">Reset</button>
       </div>
 
-      <p class="editor-panel__hint">Drag selected props to move. Use the green corner handle to move and the gold corner handle to resize. Tap the minus button to minimise this floating editor. Arrow keys nudge; Shift + arrow moves faster.</p>
+      <p class="editor-panel__hint">Select a hotspot, drag it to move, or use the gold corner handle to resize. Use the green corner handle for easier moving on mobile. Arrow keys nudge; Shift + arrow moves faster.</p>
     </section>
   </main>
 
-  <script src="data.js?v=20260706e"></script>
-  <script src="js/loading-screen.js?v=20260706e"></script>
-  <script src="script.js?v=20260706e"></script>
-  <script src="js/failsafe-boot.js?v=20260706e"></script>
+  <script src="data.js?v=hotspots1"></script>
+  <script src="js/loading-screen.js?v=hotspots1"></script>
+  <script src="script.js?v=hotspots1"></script>
 </body>
 </html>
