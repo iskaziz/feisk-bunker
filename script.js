@@ -19,7 +19,7 @@ const appState = {
 };
 
 function getAllImageSources() {
-  const backgroundSources = Object.values(FEISK_ASSETS.backgrounds);
+  const backgroundSources = [FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
   const propSources = FEISK_ASSETS.props.map((prop) => prop.src);
   return [...backgroundSources, ...propSources];
 }
@@ -61,6 +61,13 @@ async function preloadAssets() {
   app.classList.add('app--ready');
   hatchButton.disabled = false;
   loadingText.textContent = 'Click the hatch to enter.';
+}
+
+function renderSceneBackground() {
+  const background = document.querySelector('#bunkerBackground');
+  if (!background) return;
+
+  background.src = FEISK_ASSETS.backgrounds.bunkerRoom;
 }
 
 function renderProps() {
@@ -138,6 +145,7 @@ function handleKeyboard(event) {
 }
 
 function init() {
+  renderSceneBackground();
   renderProps();
   preloadAssets();
 
