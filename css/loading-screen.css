@@ -1,60 +1,87 @@
-/* Feisk Productions hatch entry screen
-   Add this CSS after your existing style.css, or copy it into style.css. */
+/*
+  Feisk Productions image-based hatch entry screen.
+  This file is intentionally scoped to the current prototype IDs/classes.
+  It replaces the older snippet CSS that hid .loading-screen unless .is-active existed.
+*/
 
-.loading-screen {
+.loading-screen--image-assets {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  display: grid !important;
+  place-items: center;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 50% 35%, rgba(120, 120, 120, 0.18), transparent 38%),
+    radial-gradient(circle at 50% 38%, rgba(120, 120, 120, 0.18), transparent 38%),
     linear-gradient(180deg, #080808 0%, #111 45%, #050505 100%);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 850ms ease, transform 850ms ease, visibility 850ms ease;
 }
 
-.loading-screen.is-active {
-  display: flex;
+.loading-screen__fog,
+.loading-screen__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.loading-bg {
-  position: relative;
-  width: min(100vw, 1400px);
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
+.loading-screen__fog {
+  background:
+    radial-gradient(circle at 50% 55%, rgba(210, 180, 110, 0.10), transparent 38%),
+    radial-gradient(circle at 20% 85%, rgba(110, 140, 160, 0.08), transparent 34%);
+  mix-blend-mode: screen;
 }
 
-.feisk-sign {
+.loading-screen__grain {
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.08) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.loading-sign-image {
   position: absolute;
   left: 50%;
-  top: 7%;
-  width: 28%;
+  top: clamp(26px, 7vh, 70px);
+  width: min(58vw, 440px);
   transform: translateX(-50%);
   filter: drop-shadow(0 0 18px rgba(255, 185, 80, 0.22));
   user-select: none;
   pointer-events: none;
+  z-index: 2;
 }
 
-.hatch-button {
+.loading-hatch-button {
   position: absolute;
   left: 50%;
-  top: 42%;
-  width: 31%;
+  top: 52%;
+  width: min(48vmin, 430px);
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
   border: 0;
   padding: 0;
   background: transparent;
-  cursor: pointer;
-  user-select: none;
-}
-
-.hatch-button:disabled {
   cursor: wait;
+  user-select: none;
+  z-index: 3;
 }
 
-.hatch-img {
+.app--ready .loading-hatch-button {
+  cursor: pointer;
+  animation: hatchReadyPulse 1.9s ease-in-out infinite;
+}
+
+.loading-hatch-button:disabled {
+  pointer-events: none;
+}
+
+.loading-hatch-image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -62,75 +89,94 @@
   filter:
     drop-shadow(0 22px 24px rgba(0, 0, 0, 0.7))
     drop-shadow(0 0 14px rgba(180, 180, 180, 0.16));
-  transition:
-    transform 0.25s ease,
-    filter 0.25s ease,
-    opacity 0.25s ease;
+  transition: opacity 280ms ease, transform 550ms ease, filter 250ms ease;
 }
 
-.hatch-button:not(:disabled):hover .hatch-img {
+.loading-hatch-image--open {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.loading-hatch-button:not(:disabled):hover .loading-hatch-image--closed,
+.loading-hatch-button:not(:disabled):focus-visible .loading-hatch-image--closed {
   transform: scale(1.025);
   filter:
     drop-shadow(0 26px 26px rgba(0, 0, 0, 0.8))
     drop-shadow(0 0 20px rgba(220, 220, 220, 0.25));
 }
 
-.hatch-button.is-opening .hatch-img {
-  transform: scale(1.04);
+.app--entering .loading-hatch-image--closed {
+  opacity: 0;
+  transform: scale(1.04) rotate(-2deg);
 }
 
-.enter-prompt {
-  position: absolute;
-  left: 50%;
-  bottom: 11%;
-  transform: translateX(-50%);
-  padding: 0.65rem 1.1rem;
-  color: #d7c79d;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(0.8rem, 1.4vw, 1.15rem);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(210, 180, 110, 0.35);
-  box-shadow: 0 0 18px rgba(0, 0, 0, 0.7);
-  animation: promptPulse 1.8s ease-in-out infinite;
-  transition: opacity 0.25s ease;
+.app--entering .loading-hatch-image--open {
+  opacity: 1;
+  transform: scale(1);
 }
 
-@keyframes promptPulse {
-  0%, 100% { opacity: 0.65; }
-  50% { opacity: 1; }
+.app--inside #loadingScreen,
+#loadingScreen[aria-hidden="true"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-5vh) scale(1.02);
 }
 
-.bunker-screen {
-  display: none;
+/* Emergency visibility guards for the live black-screen issue. */
+#bunkerScene.bunker-scene--active,
+.app--inside #bunkerScene {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  background: #050607;
 }
 
-.bunker-screen.is-active {
-  display: block;
+#sceneViewport,
+#sceneStage,
+#propsLayer {
+  display: block !important;
+  visibility: visible !important;
+}
+
+#bunkerBackground {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  z-index: 1 !important;
+}
+
+#propsLayer {
+  z-index: 10 !important;
+}
+
+@keyframes hatchReadyPulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(215, 178, 90, 0)); }
+  50% { filter: drop-shadow(0 0 24px rgba(215, 178, 90, 0.34)); }
 }
 
 @media (orientation: portrait) {
-  .loading-bg {
-    width: 100vw;
-    height: 100vh;
-    aspect-ratio: auto;
+  .loading-sign-image {
+    top: 9vh;
+    width: min(76vw, 390px);
   }
 
-  .feisk-sign {
-    top: 10%;
-    width: 58%;
+  .loading-hatch-button {
+    top: 52%;
+    width: min(72vw, 380px);
   }
 
-  .hatch-button {
-    top: 46%;
-    width: 68%;
-  }
-
-  .enter-prompt {
-    bottom: 14%;
-    width: max-content;
-    max-width: 86vw;
-    text-align: center;
+  .loading-panel {
+    left: 50%;
+    right: auto;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    width: min(88vw, 520px);
+    transform: translateX(-50%);
   }
 }
