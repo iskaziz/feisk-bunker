@@ -25,14 +25,41 @@ const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
 
+
+function showBootWarning(message) {
+  console.warn('[Feisk boot]', message);
+  if (loadingText && !appState?.hasEntered) {
+    loadingText.textContent = message;
+  }
+}
+
+window.addEventListener('error', (event) => {
+  const message = event.message || 'Unknown JavaScript error';
+  console.error('[Feisk runtime error]', message, event.error || event);
+  if (loadingText && !appState?.hasEntered) {
+    loadingText.textContent = `Boot warning: ${message}. Click the hatch to continue.`;
+  }
+  if (hatchButton) hatchButton.disabled = false;
+  if (app) {
+    app.classList.remove('app--loading');
+    app.classList.add('app--ready');
+  }
+});
+
 const STORAGE_KEY = 'feisk-bunker-prop-placement-v1';
 
-const ACTIVE_FEISK_ASSETS = (typeof FEISK_ASSETS !== 'undefined')
-  ? FEISK_ASSETS
-  : (window.FEISK_ASSETS || window.FEISK_LAYER_B_PROPS || {
-      backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-background-reference.png' },
-      props: []
-    });
+const DEFAULT_FEISK_ASSETS = {
+  backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-background-reference.png' },
+  props: []
+};
+
+const ACTIVE_FEISK_ASSETS = (() => {
+  const candidate = window.FEISK_ASSETS || window.FEISK_LAYER_B_PROPS || DEFAULT_FEISK_ASSETS;
+  return {
+    backgrounds: candidate.backgrounds || DEFAULT_FEISK_ASSETS.backgrounds,
+    props: Array.isArray(candidate.props) ? candidate.props : []
+  };
+})();
 
 const appState = {
   isLoaded: false,
@@ -57,6 +84,15 @@ function round1(value) {
   return Math.round(value * 10) / 10;
 }
 
+function unlockHatch(message = 'Click the hatch to enter.') {
+  appState.isLoaded = true;
+  app.classList.remove('app--loading');
+  app.classList.add('app--ready');
+  hatchButton.disabled = false;
+  loadingProgress.style.width = '100%';
+  loadingText.textContent = message;
+}
+
 function getAllImageSources() {
   const backgroundSources = [ACTIVE_FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
   const propSources = ACTIVE_FEISK_ASSETS.props.map((prop) => prop.src);
@@ -66,13 +102,31 @@ function getAllImageSources() {
 
 function preloadImage(src) {
   return new Promise((resolve) => {
-    const image = new Image();
+    if (!src || typeof src !== 'string') {
+      resolve({ src, status: 'skipped' });
+      return;
+    }
 
-    image.onload = () => resolve({ src, status: 'loaded' });
+    const image = new Image();
+    let isDone = false;
+
+    const finish = (status) => {
+      if (isDone) return;
+      isDone = true;
+      window.clearTimeout(timer);
+      resolve({ src, status });
+    };
+
+    const timer = window.setTimeout(() => {
+      console.warn(`Prototype asset timed out while loading: ${src}`);
+      finish('timeout');
+    }, 4500);
+
+    image.onload = () => finish('loaded');
 
     image.onerror = () => {
       console.warn(`Prototype asset missing or failed to load: ${src}`);
-      resolve({ src, status: 'missing' });
+      finish('missing');
     };
 
     image.src = src;
@@ -80,15 +134,16 @@ function preloadImage(src) {
 }
 
 async function preloadAssets() {
+  const safetyTimer = window.setTimeout(() => {
+    if (!appState.isLoaded) unlockHatch('Click the hatch to enter.');
+  }, 7000);
+
+  try {
   const sources = getAllImageSources();
   let loadedCount = 0;
 
   if (!sources.length) {
-    appState.isLoaded = true;
-    app.classList.remove('app--loading');
-    app.classList.add('app--ready');
-    hatchButton.disabled = false;
-    loadingText.textContent = 'Click the hatch to enter.';
+    unlockHatch();
     return;
   }
 
@@ -103,11 +158,13 @@ async function preloadAssets() {
     })
   );
 
-  appState.isLoaded = true;
-  app.classList.remove('app--loading');
-  app.classList.add('app--ready');
-  hatchButton.disabled = false;
-  loadingText.textContent = 'Click the hatch to enter.';
+  unlockHatch();
+  } catch (error) {
+    console.error('[Feisk preload failed]', error);
+    unlockHatch('Click the hatch to enter.');
+  } finally {
+    window.clearTimeout(safetyTimer);
+  }
 }
 
 function renderSceneBackground() {
@@ -287,7 +344,7 @@ function toggleEditorMode(forceValue) {
 
   if (appState.editorMode) {
     closeInfoPanel();
-    selectProp(appState.selectedPropId || ACTIVE_FEISK_ASSETS.props[0].id);
+    if (ACTIVE_FEISK_ASSETS.props.length) selectProp(appState.selectedPropId || ACTIVE_FEISK_ASSETS.props[0].id);
     updateEditorStatus('Editor mode enabled. Drag props, or use the green corner handle to move. Pull the gold corner handle to resize.');
   } else {
     appState.selectedPropId = null;
@@ -646,4 +703,14 @@ function init() {
   });
 }
 
-init();
+try {
+  init();
+} catch (error) {
+  console.error('[Feisk init failed]', error);
+  if (loadingText) loadingText.textContent = `Boot warning: ${error.message}. Click the hatch to continue.`;
+  if (hatchButton) hatchButton.disabled = false;
+  if (app) {
+    app.classList.remove('app--loading');
+    app.classList.add('app--ready');
+  }
+}
