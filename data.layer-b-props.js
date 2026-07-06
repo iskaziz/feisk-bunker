@@ -6,7 +6,7 @@
   x/y mark the centre point of the clickable PNG on the stage.
 */
 
-const FEISK_ASSETS = {
+window.FEISK_ASSETS = {
   backgrounds: {
     bunkerRoom: 'assets/backgrounds/bunker-room-background-reference.png',
     bunkerPreview: 'assets/backgrounds/bunker-with-props-preview.png'
@@ -119,3 +119,5 @@ const FEISK_ASSETS = {
     }
   ]
 };
+
+window.FEISK_LAYER_B_PROPS = window.FEISK_ASSETS;

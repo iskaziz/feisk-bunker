@@ -27,6 +27,13 @@ const editorCloseButton = document.querySelector('#editorCloseButton');
 
 const STORAGE_KEY = 'feisk-bunker-prop-placement-v1';
 
+const ACTIVE_FEISK_ASSETS = (typeof FEISK_ASSETS !== 'undefined')
+  ? FEISK_ASSETS
+  : (window.FEISK_ASSETS || window.FEISK_LAYER_B_PROPS || {
+      backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-background-reference.png' },
+      props: []
+    });
+
 const appState = {
   isLoaded: false,
   hasEntered: false,
@@ -40,7 +47,7 @@ const appState = {
   resizeState: null
 };
 
-const originalProps = FEISK_ASSETS.props.map((prop) => ({ ...prop }));
+const originalProps = ACTIVE_FEISK_ASSETS.props.map((prop) => ({ ...prop }));
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -51,8 +58,8 @@ function round1(value) {
 }
 
 function getAllImageSources() {
-  const backgroundSources = [FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
-  const propSources = FEISK_ASSETS.props.map((prop) => prop.src);
+  const backgroundSources = [ACTIVE_FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
+  const propSources = ACTIVE_FEISK_ASSETS.props.map((prop) => prop.src);
   const loadingSources = window.FEISK_LOADING_SCREEN?.uiAssets || [];
   return [...backgroundSources, ...propSources, ...loadingSources];
 }
@@ -76,6 +83,15 @@ async function preloadAssets() {
   const sources = getAllImageSources();
   let loadedCount = 0;
 
+  if (!sources.length) {
+    appState.isLoaded = true;
+    app.classList.remove('app--loading');
+    app.classList.add('app--ready');
+    hatchButton.disabled = false;
+    loadingText.textContent = 'Click the hatch to enter.';
+    return;
+  }
+
   await Promise.all(
     sources.map(async (src) => {
       const result = await preloadImage(src);
@@ -98,11 +114,11 @@ function renderSceneBackground() {
   const background = document.querySelector('#bunkerBackground');
   if (!background) return;
 
-  background.src = FEISK_ASSETS.backgrounds.bunkerRoom;
+  background.src = ACTIVE_FEISK_ASSETS.backgrounds.bunkerRoom;
 }
 
 function getPropById(propId) {
-  return FEISK_ASSETS.props.find((prop) => prop.id === propId);
+  return ACTIVE_FEISK_ASSETS.props.find((prop) => prop.id === propId);
 }
 
 function applyPropPlacement(button, prop) {
@@ -127,7 +143,7 @@ function updatePropElement(propId) {
 function renderProps() {
   propsLayer.innerHTML = '';
 
-  FEISK_ASSETS.props.forEach((prop) => {
+  ACTIVE_FEISK_ASSETS.props.forEach((prop) => {
     const button = document.createElement('button');
     button.className = 'scene-prop';
     button.type = 'button';
@@ -271,7 +287,7 @@ function toggleEditorMode(forceValue) {
 
   if (appState.editorMode) {
     closeInfoPanel();
-    selectProp(appState.selectedPropId || FEISK_ASSETS.props[0].id);
+    selectProp(appState.selectedPropId || ACTIVE_FEISK_ASSETS.props[0].id);
     updateEditorStatus('Editor mode enabled. Drag props, or use the green corner handle to move. Pull the gold corner handle to resize.');
   } else {
     appState.selectedPropId = null;
@@ -396,8 +412,8 @@ function handlePointerMove(event) {
 
 function getExportableAssets() {
   return {
-    backgrounds: { ...FEISK_ASSETS.backgrounds },
-    props: FEISK_ASSETS.props.map((prop) => ({
+    backgrounds: { ...ACTIVE_FEISK_ASSETS.backgrounds },
+    props: ACTIVE_FEISK_ASSETS.props.map((prop) => ({
       ...prop,
       x: round1(prop.x),
       y: round1(prop.y),
@@ -409,7 +425,7 @@ function getExportableAssets() {
 }
 
 function savePlacementToLocalStorage() {
-  const placement = FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
+  const placement = ACTIVE_FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
     id,
     x: round1(x),
     y: round1(y),
@@ -453,7 +469,7 @@ function loadPlacementFromLocalStorage() {
 }
 
 function getPlacementExport() {
-  const props = FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
+  const props = ACTIVE_FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
     id,
     x: round1(x),
     y: round1(y),
@@ -474,7 +490,8 @@ function getDataFileExport() {
   x/y mark the centre point of the clickable PNG on the stage.
 */
 
-const FEISK_ASSETS = ${JSON.stringify(getExportableAssets(), null, 2)};
+window.FEISK_ASSETS = ${JSON.stringify(getExportableAssets(), null, 2)};
+window.FEISK_LAYER_B_PROPS = window.FEISK_ASSETS;
 `;
 }
 

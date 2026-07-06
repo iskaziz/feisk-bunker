@@ -63,3 +63,9 @@ Portrait mobile shows a rotate-to-landscape prompt first. Users can continue in 
 UPLOAD NOTE
 -----------
 Upload the contents of this folder into the root of your GitHub Pages repository. Keep the asset filenames exactly as listed above.
+
+
+LIVE FIX NOTES:
+- data.js and data.layer-b-props.js now attach assets to window.FEISK_ASSETS, avoiding const redeclaration errors.
+- script.js now uses a safe ACTIVE_FEISK_ASSETS fallback, so the loading screen will not remain stuck if one data filename is missing.
+- Upload files to the repository root, not inside a nested folder.
