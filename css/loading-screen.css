@@ -1,125 +1,92 @@
-/*
-  Feisk Productions image-based jungle hatch entry screen.
-  Uses separate portrait/landscape loading backgrounds with the hatch/sign layered above.
-*/
-
-.loading-screen--image-assets {
-  --loading-bg: url('../assets/backgrounds/loading-jungle-landscape.png');
-  --hatch-left: 61%;
-  --hatch-top: 65%;
-  --hatch-width: clamp(190px, 24vw, 360px);
-  --sign-left: 50%;
-  --sign-top: clamp(18px, 5vh, 50px);
-  --sign-width: min(42vw, 420px);
-
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: grid !important;
+.loading-screen {
+  z-index: 50;
+  display: grid;
   place-items: center;
-  overflow: hidden;
-  background-color: #020503;
-  background-image:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.28)),
-    var(--loading-bg);
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transition: opacity 850ms ease, transform 850ms ease, visibility 850ms ease;
+  background: #020302;
+  transition: opacity 700ms ease, transform 850ms ease;
 }
 
-.loading-screen--image-assets::after {
+.app--inside .loading-screen {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4%);
+}
+
+.loading-screen__bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/backgrounds/loading-jungle-landscape.png');
+  background-size: cover;
+  background-position: center;
+  filter: saturate(.92) contrast(1.05) brightness(.78);
+  transform: scale(1.02);
+}
+
+.loading-screen::after {
   content: '';
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  z-index: 1;
   background:
-    radial-gradient(circle at 50% 48%, transparent 0 45%, rgba(0, 0, 0, 0.28) 82%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.34));
-}
-
-.loading-screen__fog,
-.loading-screen__grain {
-  position: absolute;
-  inset: 0;
+    radial-gradient(circle at 58% 60%, rgba(227,202,119,.18), transparent 28%),
+    radial-gradient(circle at center, transparent 45%, rgba(0,0,0,.68) 100%);
   pointer-events: none;
 }
 
 .loading-screen__fog {
-  z-index: 2;
-  background:
-    radial-gradient(circle at 47% 23%, rgba(230, 230, 170, 0.20), transparent 30%),
-    radial-gradient(circle at 60% 62%, rgba(140, 170, 95, 0.09), transparent 38%);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(115deg, transparent 20%, rgba(230,226,170,.12) 42%, transparent 62%);
   mix-blend-mode: screen;
-  opacity: 0.75;
+  animation: fogDrift 7s ease-in-out infinite alternate;
 }
 
 .loading-screen__grain {
-  z-index: 8;
-  opacity: 0.14;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.08) 0 1px,
-    transparent 1px 4px
-  );
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: .13;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 1px, transparent 1px 4px);
+  pointer-events: none;
 }
 
 .loading-sign-image {
   position: absolute;
-  left: var(--sign-left);
-  top: var(--sign-top);
-  width: var(--sign-width);
-  transform: translateX(-50%);
-  filter:
-    drop-shadow(0 8px 14px rgba(0, 0, 0, 0.75))
-    drop-shadow(0 0 18px rgba(255, 185, 80, 0.22));
+  z-index: 6;
+  left: var(--sign-left, 15%);
+  top: var(--sign-top, 18%);
+  width: var(--sign-width, clamp(180px, 24vw, 360px));
+  max-width: 42vw;
+  height: auto;
+  filter: drop-shadow(0 12px 20px rgba(0,0,0,.75));
   user-select: none;
   pointer-events: none;
-  z-index: 5;
 }
 
 .loading-hatch-button {
   position: absolute;
-  left: var(--hatch-left);
-  top: var(--hatch-top);
-  width: var(--hatch-width);
-  aspect-ratio: 1 / 1;
-  transform: translate(-50%, -50%);
-  border: 0;
+  z-index: 7;
+  left: var(--hatch-left, 61%);
+  top: var(--hatch-top, 66%);
+  width: var(--hatch-width, clamp(190px, 24vw, 360px));
+  aspect-ratio: 1 / .72;
   padding: 0;
+  border: 0;
   background: transparent;
-  cursor: wait;
-  user-select: none;
-  z-index: 6;
-  touch-action: manipulation;
-}
-
-.loading-hatch-button::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 62%;
-  width: 94%;
-  height: 30%;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.48), transparent 68%);
-  filter: blur(6px);
-  z-index: -1;
-  opacity: 0.82;
-}
-
-.app--ready .loading-hatch-button {
   cursor: pointer;
-  animation: hatchReadyPulse 1.9s ease-in-out infinite;
+  filter: drop-shadow(0 18px 18px rgba(0,0,0,.78));
 }
 
 .loading-hatch-button:disabled {
-  pointer-events: none;
+  cursor: wait;
+  opacity: .78;
+}
+
+.app--ready .loading-hatch-button:not(:disabled) {
+  animation: hatchInvite 1.7s ease-in-out infinite;
 }
 
 .loading-hatch-image {
@@ -128,24 +95,13 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  display: block;
-  filter:
-    drop-shadow(0 22px 24px rgba(0, 0, 0, 0.7))
-    drop-shadow(0 0 14px rgba(180, 180, 180, 0.16));
-  transition: opacity 280ms ease, transform 550ms ease, filter 250ms ease;
+  transition: opacity 260ms ease, transform 460ms ease;
+  pointer-events: none;
 }
 
 .loading-hatch-image--open {
   opacity: 0;
-  transform: scale(0.96);
-}
-
-.loading-hatch-button:not(:disabled):hover .loading-hatch-image--closed,
-.loading-hatch-button:not(:disabled):focus-visible .loading-hatch-image--closed {
-  transform: scale(1.025);
-  filter:
-    drop-shadow(0 26px 26px rgba(0, 0, 0, 0.8))
-    drop-shadow(0 0 20px rgba(220, 220, 220, 0.25));
+  transform: scale(.98);
 }
 
 .app--entering .loading-hatch-image--closed {
@@ -155,86 +111,74 @@
 
 .app--entering .loading-hatch-image--open {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1.02);
 }
 
-.app--inside #loadingScreen,
-#loadingScreen[aria-hidden='true'] {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: translateY(-5vh) scale(1.02);
+.loading-panel {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(240,201,106,.36);
+  border-radius: 14px;
+  background: rgba(6,6,5,.78);
+  box-shadow: 0 16px 36px rgba(0,0,0,.6), inset 0 0 24px rgba(240,201,106,.06);
+  transform: translateX(-50%);
+  text-align: center;
+  backdrop-filter: blur(4px);
 }
 
-/* Emergency visibility guards for the live black-screen issue. */
-#bunkerScene.bunker-scene--active,
-.app--inside #bunkerScene {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  background: #050607;
+.loading-panel__text {
+  margin-bottom: 8px;
+  color: #fff1c8;
+  font: 700 13px/1.2 Arial, sans-serif;
+  letter-spacing: .16em;
+  text-transform: uppercase;
 }
 
-#sceneViewport,
-#sceneStage,
-#propsLayer {
-  display: block !important;
-  visibility: visible !important;
+.loading-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
 }
 
-#bunkerBackground {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  z-index: 1 !important;
+.loading-bar__fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b6429, #f0c96a, #fff1ba);
+  transition: width 180ms ease;
 }
 
-#propsLayer {
-  z-index: 10 !important;
+@keyframes hatchInvite {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.025); }
 }
 
-@keyframes hatchReadyPulse {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(215, 178, 90, 0)); }
-  50% { filter: drop-shadow(0 0 24px rgba(215, 178, 90, 0.34)); }
+@keyframes fogDrift {
+  from { transform: translateX(-2%); opacity: .45; }
+  to { transform: translateX(2%); opacity: .72; }
 }
 
 @media (orientation: portrait) {
-  .loading-screen--image-assets {
-    --loading-bg: url('../assets/backgrounds/loading-jungle-portrait.png');
-    --hatch-left: 50%;
-    --hatch-top: 73%;
-    --hatch-width: min(56vw, 360px);
+  .loading-screen__bg {
+    background-image: url('../assets/backgrounds/loading-jungle-portrait.png');
+  }
+
+  .loading-sign-image {
     --sign-left: 50%;
-    --sign-top: max(24px, 5.5vh);
-    --sign-width: min(74vw, 390px);
-    background-position: center center;
-  }
-
-  .loading-panel {
-    left: 50%;
-    right: auto;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    width: min(88vw, 520px);
+    --sign-top: 12%;
+    --sign-width: min(62vw, 310px);
     transform: translateX(-50%);
-    z-index: 7;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 520px) {
-  .loading-screen--image-assets {
-    --hatch-top: 67%;
-    --hatch-width: clamp(150px, 22vw, 260px);
-    --sign-top: 14px;
-    --sign-width: min(34vw, 330px);
+    max-width: 72vw;
   }
 
-  .loading-panel {
-    bottom: 12px;
+  .loading-hatch-button {
+    --hatch-left: 50%;
+    --hatch-top: 72%;
+    --hatch-width: min(56vw, 340px);
   }
 }
