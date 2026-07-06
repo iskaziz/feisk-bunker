@@ -24,6 +24,7 @@ const editorCopyButton = document.querySelector('#editorCopyButton');
 const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
+const editorMinimizeButton = document.querySelector('#editorMinimizeButton');
 
 
 function showBootWarning(message) {
@@ -71,7 +72,8 @@ const appState = {
   doorClickCount: 0,
   doorClickTimer: null,
   dragState: null,
-  resizeState: null
+  resizeState: null,
+  editorMinimized: false
 };
 
 const originalProps = ACTIVE_FEISK_ASSETS.props.map((prop) => ({ ...prop }));
@@ -337,16 +339,32 @@ function handleDoorTripleClick() {
   }, 900);
 }
 
+
+function setEditorMinimized(forceValue) {
+  if (!editorPanel) return;
+
+  appState.editorMinimized = typeof forceValue === 'boolean' ? forceValue : !appState.editorMinimized;
+  editorPanel.classList.toggle('editor-panel--minimized', appState.editorMinimized);
+
+  if (editorMinimizeButton) {
+    editorMinimizeButton.textContent = appState.editorMinimized ? '▢' : '–';
+    editorMinimizeButton.setAttribute('aria-label', appState.editorMinimized ? 'Expand editor' : 'Minimize editor');
+    editorMinimizeButton.setAttribute('aria-expanded', appState.editorMinimized ? 'false' : 'true');
+  }
+}
+
 function toggleEditorMode(forceValue) {
   appState.editorMode = typeof forceValue === 'boolean' ? forceValue : !appState.editorMode;
   app.classList.toggle('app--editor-mode', appState.editorMode);
   editorPanel.hidden = !appState.editorMode;
 
   if (appState.editorMode) {
+    setEditorMinimized(false);
     closeInfoPanel();
     if (ACTIVE_FEISK_ASSETS.props.length) selectProp(appState.selectedPropId || ACTIVE_FEISK_ASSETS.props[0].id);
-    updateEditorStatus('Editor mode enabled. Drag props, or use the green corner handle to move. Pull the gold corner handle to resize.');
+    updateEditorStatus('Editor mode enabled. Drag props, use the green handle to move, or the gold handle to resize. Tap – to minimise this floating panel.');
   } else {
+    setEditorMinimized(false);
     appState.selectedPropId = null;
     updateSelectedClass();
   }
@@ -688,6 +706,10 @@ function init() {
 
   if (editorCloseButton) {
     editorCloseButton.addEventListener('click', () => toggleEditorMode(false));
+  }
+
+  if (editorMinimizeButton) {
+    editorMinimizeButton.addEventListener('click', () => setEditorMinimized());
   }
 
   window.addEventListener('resize', () => {

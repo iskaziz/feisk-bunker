@@ -90,11 +90,11 @@
 /* Editor panel */
 .editor-panel {
   position: fixed;
-  left: 16px;
-  top: 16px;
+  left: 14px;
+  top: 14px;
   z-index: 90;
-  width: min(92vw, 370px);
-  max-height: calc(100dvh - 32px);
+  width: min(88vw, 340px);
+  max-height: min(72dvh, 520px);
   overflow: auto;
   padding: 14px;
   border: 2px solid rgba(215, 178, 90, 0.7);
@@ -128,7 +128,15 @@
   line-height: 1.2;
 }
 
-.editor-panel__close {
+.editor-panel__window-controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.editor-panel__close,
+.editor-panel__minimize {
   flex: 0 0 auto;
   width: 30px;
   height: 30px;
@@ -182,10 +190,50 @@
 .editor-panel__actions button:hover,
 .editor-panel__actions button:focus-visible,
 .editor-panel__close:hover,
-.editor-panel__close:focus-visible {
+.editor-panel__close:focus-visible,
+.editor-panel__minimize:hover,
+.editor-panel__minimize:focus-visible {
   background: #d7b25a;
   color: #111;
   outline: none;
+}
+
+
+.editor-panel--minimized {
+  top: auto;
+  bottom: 14px;
+  width: min(78vw, 300px);
+  max-height: 58px;
+  overflow: hidden;
+  padding: 9px 10px;
+  border-radius: 999px;
+}
+
+.editor-panel--minimized .editor-panel__header {
+  align-items: center;
+}
+
+.editor-panel--minimized .editor-panel__kicker,
+.editor-panel--minimized .editor-panel__status,
+.editor-panel--minimized .editor-panel__values,
+.editor-panel--minimized .editor-panel__actions,
+.editor-panel--minimized .editor-panel__hint {
+  display: none;
+}
+
+.editor-panel--minimized .editor-panel__title {
+  max-width: 170px;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-panel--minimized .editor-panel__close,
+.editor-panel--minimized .editor-panel__minimize {
+  width: 28px;
+  height: 28px;
 }
 
 /* Mobile-safe information window */
@@ -193,6 +241,37 @@
   max-height: min(78dvh, 620px);
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+
+@media (max-width: 820px) {
+  .editor-panel {
+    left: 10px;
+    top: auto;
+    bottom: 10px;
+    width: min(86vw, 330px);
+    max-height: min(56dvh, 380px);
+    padding: 10px;
+  }
+
+  .editor-panel__title {
+    font-size: 0.98rem;
+  }
+
+  .editor-panel__status,
+  .editor-panel__hint,
+  .editor-panel__values {
+    font-size: 0.75rem;
+  }
+
+  .editor-panel__values {
+    min-height: 82px;
+  }
+
+  .editor-panel__actions button {
+    padding: 7px 10px;
+    font-size: 0.68rem;
+  }
 }
 
 @media (max-width: 820px) {
@@ -269,7 +348,7 @@
   }
 
   .editor-panel {
-    width: min(48vw, 360px);
+    width: min(44vw, 320px);
     max-height: calc(100dvh - 24px);
   }
 }
@@ -290,8 +369,17 @@
 
   .editor-panel {
     left: 10px;
-    top: 10px;
-    width: calc(100vw - 20px);
-    max-height: calc(100dvh - 20px);
+    right: auto;
+    top: auto;
+    bottom: 10px;
+    width: min(86vw, 320px);
+    max-height: min(54dvh, 360px);
+    padding: 10px;
+  }
+
+  .editor-panel--minimized {
+    width: min(74vw, 270px);
+    max-height: 52px;
+    padding: 8px 9px;
   }
 }
