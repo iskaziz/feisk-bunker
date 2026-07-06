@@ -16,6 +16,13 @@
   box-shadow: 0 22px 60px rgba(0,0,0,.72), inset 0 0 20px rgba(240,201,106,.06);
   font-family: Arial, sans-serif;
   backdrop-filter: blur(8px);
+  user-select: none;
+  touch-action: none;
+}
+
+.editor-panel.is-dragging {
+  transition: none;
+  opacity: .96;
 }
 
 .editor-panel[hidden] {
@@ -27,6 +34,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  cursor: move;
+  touch-action: none;
 }
 
 .editor-panel__kicker {

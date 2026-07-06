@@ -26,6 +26,7 @@ const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
 const editorMinimizeButton = document.querySelector('#editorMinimizeButton');
+const editorHeader = editorPanel?.querySelector('.editor-panel__header');
 
 const DEFAULT_DATA = {
   backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-final.png' },
@@ -57,6 +58,7 @@ const appState = {
   doorClickTimer: null,
   dragState: null,
   resizeState: null,
+  editorPanelDragState: null,
   editorMinimized: false
 };
 
@@ -289,6 +291,18 @@ function checkMobileOrientation() {
   mobileOrientationPrompt.classList.toggle('is-visible', shouldShow);
   mobileOrientationPrompt.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
   sceneViewport.classList.toggle('scene-viewport--portrait-scroll', isPortraitMobile);
+
+  if (isPortraitMobile && appState.hasEntered) {
+    window.requestAnimationFrame(centerPortraitSceneIfNeeded);
+  }
+}
+
+function centerPortraitSceneIfNeeded() {
+  if (!sceneViewport.classList.contains('scene-viewport--portrait-scroll')) return;
+  const maxScroll = sceneViewport.scrollWidth - sceneViewport.clientWidth;
+  if (maxScroll > 0 && sceneViewport.scrollLeft < 8) {
+    sceneViewport.scrollLeft = Math.round(maxScroll * 0.5);
+  }
 }
 
 function handleEditorDoorClick() {
@@ -396,7 +410,47 @@ function beginResize(event, id) {
   event.currentTarget.setPointerCapture?.(event.pointerId);
 }
 
+function beginEditorPanelDrag(event) {
+  if (!appState.editorMode || !editorPanel || event.target.closest('button')) return;
+  event.preventDefault();
+
+  const rect = editorPanel.getBoundingClientRect();
+  appState.editorPanelDragState = {
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startLeft: rect.left,
+    startTop: rect.top,
+    width: rect.width,
+    height: rect.height
+  };
+
+  editorPanel.classList.add('is-dragging');
+  editorPanel.style.left = `${rect.left}px`;
+  editorPanel.style.top = `${rect.top}px`;
+  editorPanel.style.right = 'auto';
+  editorPanel.style.bottom = 'auto';
+  editorHeader?.setPointerCapture?.(event.pointerId);
+}
+
+function moveEditorPanel(event) {
+  const drag = appState.editorPanelDragState;
+  if (!drag) return;
+
+  const margin = 8;
+  const nextLeft = clamp(drag.startLeft + event.clientX - drag.startClientX, margin, window.innerWidth - drag.width - margin);
+  const nextTop = clamp(drag.startTop + event.clientY - drag.startClientY, margin, window.innerHeight - drag.height - margin);
+
+  editorPanel.style.left = `${Math.round(nextLeft)}px`;
+  editorPanel.style.top = `${Math.round(nextTop)}px`;
+}
+
 function handlePointerMove(event) {
+  if (appState.editorPanelDragState) {
+    moveEditorPanel(event);
+    return;
+  }
+
   if (appState.dragState) {
     const hotspot = getHotspotById(appState.dragState.id);
     if (!hotspot) return;
@@ -433,6 +487,8 @@ function handlePointerMove(event) {
 function handlePointerUp() {
   appState.dragState = null;
   appState.resizeState = null;
+  appState.editorPanelDragState = null;
+  editorPanel?.classList.remove('is-dragging');
 }
 
 function nudgeSelectedHotspot(event) {
@@ -536,11 +592,13 @@ function init() {
   continuePortraitButton.addEventListener('click', () => {
     appState.portraitBypass = true;
     checkMobileOrientation();
+    window.setTimeout(centerPortraitSceneIfNeeded, 50);
   });
 
   editDoorHotspot.addEventListener('click', handleEditorDoorClick);
   editorCloseButton.addEventListener('click', () => toggleEditor(false));
   editorMinimizeButton.addEventListener('click', toggleEditorMinimized);
+  editorHeader?.addEventListener('pointerdown', beginEditorPanelDrag);
   editorCopyButton.addEventListener('click', copyPlacement);
   editorDownloadButton.addEventListener('click', downloadDataFile);
   editorResetButton.addEventListener('click', resetPlacement);
