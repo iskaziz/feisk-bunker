@@ -5,6 +5,7 @@ const loadingProgress = document.querySelector('#loadingProgress');
 const loadingScreen = document.querySelector('#loadingScreen');
 const bunkerScene = document.querySelector('#bunkerScene');
 const sceneViewport = document.querySelector('#sceneViewport');
+const sceneStage = document.querySelector('#sceneStage');
 const propsLayer = document.querySelector('#propsLayer');
 const infoPanel = document.querySelector('#infoPanel');
 const panelBackdrop = document.querySelector('#panelBackdrop');
@@ -14,13 +15,39 @@ const infoTitle = document.querySelector('#infoTitle');
 const infoBody = document.querySelector('#infoBody');
 const mobileOrientationPrompt = document.querySelector('#mobileOrientationPrompt');
 const continuePortraitButton = document.querySelector('#continuePortraitButton');
+const editDoorHotspot = document.querySelector('#editDoorHotspot');
+const editorPanel = document.querySelector('#editorPanel');
+const editorStatus = document.querySelector('#editorStatus');
+const editorSelected = document.querySelector('#editorSelected');
+const editorValues = document.querySelector('#editorValues');
+const editorCopyButton = document.querySelector('#editorCopyButton');
+const editorResetButton = document.querySelector('#editorResetButton');
+const editorCloseButton = document.querySelector('#editorCloseButton');
+
+const STORAGE_KEY = 'feisk-bunker-prop-placement-v1';
 
 const appState = {
   isLoaded: false,
   hasEntered: false,
   activePropId: null,
-  portraitBypass: false
+  portraitBypass: false,
+  editorMode: false,
+  selectedPropId: null,
+  doorClickCount: 0,
+  doorClickTimer: null,
+  dragState: null,
+  resizeState: null
 };
+
+const originalProps = FEISK_ASSETS.props.map((prop) => ({ ...prop }));
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function round1(value) {
+  return Math.round(value * 10) / 10;
+}
 
 function getAllImageSources() {
   const backgroundSources = [FEISK_ASSETS.backgrounds.bunkerRoom].filter(Boolean);
@@ -34,8 +61,6 @@ function preloadImage(src) {
 
     image.onload = () => resolve({ src, status: 'loaded' });
 
-    // For a prototype, missing placeholder files should not block entry forever.
-    // Replace this with reject/error handling when production assets are final.
     image.onerror = () => {
       console.warn(`Prototype asset missing or failed to load: ${src}`);
       resolve({ src, status: 'missing' });
@@ -74,6 +99,29 @@ function renderSceneBackground() {
   background.src = FEISK_ASSETS.backgrounds.bunkerRoom;
 }
 
+function getPropById(propId) {
+  return FEISK_ASSETS.props.find((prop) => prop.id === propId);
+}
+
+function applyPropPlacement(button, prop) {
+  button.style.left = `${prop.x}%`;
+  button.style.top = `${prop.y}%`;
+  button.style.width = `${prop.width}%`;
+  button.style.height = `${prop.height}%`;
+
+  if (prop.zIndex) {
+    button.style.zIndex = prop.zIndex;
+  }
+}
+
+function updatePropElement(propId) {
+  const prop = getPropById(propId);
+  const button = propsLayer.querySelector(`[data-prop-id="${propId}"]`);
+  if (!prop || !button) return;
+
+  applyPropPlacement(button, prop);
+}
+
 function renderProps() {
   propsLayer.innerHTML = '';
 
@@ -83,23 +131,34 @@ function renderProps() {
     button.type = 'button';
     button.dataset.propId = prop.id;
     button.setAttribute('aria-label', `Open ${prop.title} information`);
-
-    button.style.left = `${prop.x}%`;
-    button.style.top = `${prop.y}%`;
-    button.style.width = `${prop.width}%`;
-    button.style.height = `${prop.height}%`;
-
-    if (prop.zIndex) {
-      button.style.zIndex = prop.zIndex;
-    }
+    applyPropPlacement(button, prop);
 
     const image = document.createElement('img');
     image.src = prop.src;
     image.alt = prop.alt;
     image.draggable = false;
 
+    const resizeHandle = document.createElement('span');
+    resizeHandle.className = 'scene-prop__resize-handle';
+    resizeHandle.setAttribute('aria-hidden', 'true');
+
     button.appendChild(image);
-    button.addEventListener('click', () => openInfoPanel(prop.id));
+    button.appendChild(resizeHandle);
+
+    button.addEventListener('click', (event) => {
+      if (appState.editorMode) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectProp(prop.id);
+        return;
+      }
+
+      openInfoPanel(prop.id);
+    });
+
+    button.addEventListener('pointerdown', (event) => handlePropPointerDown(event, prop.id));
+    resizeHandle.addEventListener('pointerdown', (event) => handleResizePointerDown(event, prop.id));
+
     propsLayer.appendChild(button);
   });
 }
@@ -142,7 +201,7 @@ function enterBunker() {
 }
 
 function openInfoPanel(propId) {
-  const prop = FEISK_ASSETS.props.find((item) => item.id === propId);
+  const prop = getPropById(propId);
   if (!prop) return;
 
   appState.activePropId = propId;
@@ -153,7 +212,7 @@ function openInfoPanel(propId) {
   panelBackdrop.hidden = false;
   infoPanel.setAttribute('aria-hidden', 'false');
   app.classList.add('app--panel-open');
-  closePanelButton.focus();
+  closePanelButton.focus({ preventScroll: true });
 }
 
 function closeInfoPanel() {
@@ -168,19 +227,306 @@ function closeInfoPanel() {
   }, 250);
 }
 
-function handleKeyboard(event) {
-  if (event.key === 'Escape' && app.classList.contains('app--panel-open')) {
-    closeInfoPanel();
-  }
-}
-
 function continueInPortrait() {
   appState.portraitBypass = true;
   updateOrientationPrompt();
   centerSceneScroll();
 }
 
+function handleDoorTripleClick() {
+  if (!appState.hasEntered) return;
+
+  appState.doorClickCount += 1;
+  editDoorHotspot.classList.add('editor-door-hotspot--ping');
+
+  window.setTimeout(() => {
+    editDoorHotspot.classList.remove('editor-door-hotspot--ping');
+  }, 180);
+
+  clearTimeout(appState.doorClickTimer);
+
+  if (appState.doorClickCount >= 3) {
+    appState.doorClickCount = 0;
+    toggleEditorMode();
+    return;
+  }
+
+  appState.doorClickTimer = window.setTimeout(() => {
+    appState.doorClickCount = 0;
+  }, 900);
+}
+
+function toggleEditorMode(forceValue) {
+  appState.editorMode = typeof forceValue === 'boolean' ? forceValue : !appState.editorMode;
+  app.classList.toggle('app--editor-mode', appState.editorMode);
+  editorPanel.hidden = !appState.editorMode;
+
+  if (appState.editorMode) {
+    closeInfoPanel();
+    selectProp(appState.selectedPropId || FEISK_ASSETS.props[0].id);
+    updateEditorStatus('Editor mode enabled. Drag props to move. Pull the corner handle to resize.');
+  } else {
+    appState.selectedPropId = null;
+    updateSelectedClass();
+  }
+}
+
+function selectProp(propId) {
+  const prop = getPropById(propId);
+  if (!prop) return;
+
+  appState.selectedPropId = propId;
+  updateSelectedClass();
+  updateEditorReadout();
+}
+
+function updateSelectedClass() {
+  propsLayer.querySelectorAll('.scene-prop').forEach((button) => {
+    button.classList.toggle('scene-prop--selected', button.dataset.propId === appState.selectedPropId);
+  });
+}
+
+function updateEditorStatus(message) {
+  if (editorStatus) editorStatus.textContent = message;
+}
+
+function updateEditorReadout() {
+  const prop = getPropById(appState.selectedPropId);
+  if (!prop) {
+    editorSelected.textContent = 'No prop selected';
+    editorValues.textContent = '';
+    return;
+  }
+
+  editorSelected.textContent = prop.title;
+  editorValues.textContent = `id: ${prop.id}\nx: ${round1(prop.x)}\ny: ${round1(prop.y)}\nwidth: ${round1(prop.width)}\nheight: ${round1(prop.height)}\nzIndex: ${prop.zIndex || 7}`;
+}
+
+function stagePointToPercent(clientX, clientY) {
+  const rect = sceneStage.getBoundingClientRect();
+  return {
+    x: ((clientX - rect.left) / rect.width) * 100,
+    y: ((clientY - rect.top) / rect.height) * 100
+  };
+}
+
+function handlePropPointerDown(event, propId) {
+  if (!appState.editorMode) return;
+  if (event.target.classList.contains('scene-prop__resize-handle')) return;
+
+  const prop = getPropById(propId);
+  if (!prop) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  selectProp(propId);
+
+  const start = stagePointToPercent(event.clientX, event.clientY);
+  appState.dragState = {
+    propId,
+    pointerId: event.pointerId,
+    startX: start.x,
+    startY: start.y,
+    propX: prop.x,
+    propY: prop.y
+  };
+
+  event.currentTarget.setPointerCapture(event.pointerId);
+}
+
+function handleResizePointerDown(event, propId) {
+  if (!appState.editorMode) return;
+
+  const prop = getPropById(propId);
+  if (!prop) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  selectProp(propId);
+
+  const start = stagePointToPercent(event.clientX, event.clientY);
+  appState.resizeState = {
+    propId,
+    pointerId: event.pointerId,
+    startX: start.x,
+    startY: start.y,
+    width: prop.width,
+    height: prop.height
+  };
+
+  event.currentTarget.parentElement.setPointerCapture(event.pointerId);
+}
+
+function handlePointerMove(event) {
+  if (appState.dragState) {
+    const state = appState.dragState;
+    const prop = getPropById(state.propId);
+    if (!prop) return;
+
+    const point = stagePointToPercent(event.clientX, event.clientY);
+    prop.x = round1(clamp(state.propX + point.x - state.startX, 0, 100));
+    prop.y = round1(clamp(state.propY + point.y - state.startY, 0, 100));
+    updatePropElement(prop.id);
+    updateEditorReadout();
+    return;
+  }
+
+  if (appState.resizeState) {
+    const state = appState.resizeState;
+    const prop = getPropById(state.propId);
+    if (!prop) return;
+
+    const point = stagePointToPercent(event.clientX, event.clientY);
+    const deltaX = point.x - state.startX;
+    const deltaY = point.y - state.startY;
+    prop.width = round1(clamp(state.width + deltaX, 2, 70));
+    prop.height = round1(clamp(state.height + deltaY, 2, 70));
+    updatePropElement(prop.id);
+    updateEditorReadout();
+  }
+}
+
+function savePlacementToLocalStorage() {
+  const placement = FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
+    id,
+    x: round1(x),
+    y: round1(y),
+    width: round1(width),
+    height: round1(height),
+    zIndex
+  }));
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(placement));
+  updateEditorStatus('Saved to this browser. Use Copy data.js placement to update your project files.');
+}
+
+function handlePointerUp() {
+  if (appState.dragState || appState.resizeState) {
+    savePlacementToLocalStorage();
+  }
+
+  appState.dragState = null;
+  appState.resizeState = null;
+}
+
+function loadPlacementFromLocalStorage() {
+  const rawPlacement = localStorage.getItem(STORAGE_KEY);
+  if (!rawPlacement) return;
+
+  try {
+    const savedPlacement = JSON.parse(rawPlacement);
+    savedPlacement.forEach((savedProp) => {
+      const prop = getPropById(savedProp.id);
+      if (!prop) return;
+
+      prop.x = savedProp.x;
+      prop.y = savedProp.y;
+      prop.width = savedProp.width;
+      prop.height = savedProp.height;
+      prop.zIndex = savedProp.zIndex;
+    });
+  } catch (error) {
+    console.warn('Could not load saved prop placement:', error);
+  }
+}
+
+function getPlacementExport() {
+  const props = FEISK_ASSETS.props.map(({ id, x, y, width, height, zIndex }) => ({
+    id,
+    x: round1(x),
+    y: round1(y),
+    width: round1(width),
+    height: round1(height),
+    zIndex
+  }));
+
+  return JSON.stringify(props, null, 2);
+}
+
+async function copyPlacement() {
+  const exportText = getPlacementExport();
+
+  try {
+    await navigator.clipboard.writeText(exportText);
+    updateEditorStatus('Placement copied. Paste these values into data.js or data.layer-b-props.js.');
+  } catch (error) {
+    updateEditorStatus('Copy failed. Open the console and copy window.FEISK_PROP_PLACEMENT_EXPORT.');
+    window.FEISK_PROP_PLACEMENT_EXPORT = exportText;
+  }
+}
+
+function resetPlacement() {
+  originalProps.forEach((originalProp) => {
+    const prop = getPropById(originalProp.id);
+    if (!prop) return;
+
+    prop.x = originalProp.x;
+    prop.y = originalProp.y;
+    prop.width = originalProp.width;
+    prop.height = originalProp.height;
+    prop.zIndex = originalProp.zIndex;
+    updatePropElement(prop.id);
+  });
+
+  localStorage.removeItem(STORAGE_KEY);
+  updateEditorReadout();
+  updateEditorStatus('Placement reset to the values currently shipped in data.js.');
+}
+
+function nudgeSelectedProp(event) {
+  if (!appState.editorMode || !appState.selectedPropId) return;
+
+  const prop = getPropById(appState.selectedPropId);
+  if (!prop) return;
+
+  const step = event.shiftKey ? 1 : 0.2;
+  let didMove = false;
+
+  if (event.key === 'ArrowLeft') {
+    prop.x = round1(clamp(prop.x - step, 0, 100));
+    didMove = true;
+  }
+
+  if (event.key === 'ArrowRight') {
+    prop.x = round1(clamp(prop.x + step, 0, 100));
+    didMove = true;
+  }
+
+  if (event.key === 'ArrowUp') {
+    prop.y = round1(clamp(prop.y - step, 0, 100));
+    didMove = true;
+  }
+
+  if (event.key === 'ArrowDown') {
+    prop.y = round1(clamp(prop.y + step, 0, 100));
+    didMove = true;
+  }
+
+  if (didMove) {
+    event.preventDefault();
+    updatePropElement(prop.id);
+    updateEditorReadout();
+    savePlacementToLocalStorage();
+  }
+}
+
+function handleKeyboard(event) {
+  if (event.key === 'Escape') {
+    if (appState.editorMode) {
+      toggleEditorMode(false);
+      return;
+    }
+
+    if (app.classList.contains('app--panel-open')) {
+      closeInfoPanel();
+    }
+  }
+
+  nudgeSelectedProp(event);
+}
+
 function init() {
+  loadPlacementFromLocalStorage();
   renderSceneBackground();
   renderProps();
   preloadAssets();
@@ -189,9 +535,28 @@ function init() {
   closePanelButton.addEventListener('click', closeInfoPanel);
   panelBackdrop.addEventListener('click', closeInfoPanel);
   document.addEventListener('keydown', handleKeyboard);
+  document.addEventListener('pointermove', handlePointerMove);
+  document.addEventListener('pointerup', handlePointerUp);
+  document.addEventListener('pointercancel', handlePointerUp);
 
   if (continuePortraitButton) {
     continuePortraitButton.addEventListener('click', continueInPortrait);
+  }
+
+  if (editDoorHotspot) {
+    editDoorHotspot.addEventListener('click', handleDoorTripleClick);
+  }
+
+  if (editorCopyButton) {
+    editorCopyButton.addEventListener('click', copyPlacement);
+  }
+
+  if (editorResetButton) {
+    editorResetButton.addEventListener('click', resetPlacement);
+  }
+
+  if (editorCloseButton) {
+    editorCloseButton.addEventListener('click', () => toggleEditorMode(false));
   }
 
   window.addEventListener('resize', () => {

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Feisk Productions Vault</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="prop-placement.css" />
 </head>
 <body>
   <main id="app" class="app app--loading">
@@ -46,6 +47,7 @@
         <div id="sceneStage" class="scene-stage">
           <img id="bunkerBackground" class="bunker-scene__background" src="assets/backgrounds/bunker-room-background-reference.png" alt="Feisk Productions bunker room" />
           <div id="propsLayer" class="props-layer" aria-label="Interactive bunker objects"></div>
+          <button id="editDoorHotspot" class="editor-door-hotspot" type="button" aria-label="Hidden editor access door"></button>
         </div>
       </div>
 
@@ -68,6 +70,24 @@
     </aside>
 
     <div id="panelBackdrop" class="panel-backdrop" hidden></div>
+
+    <!-- HIDDEN PROP PLACEMENT EDITOR -->
+    <section id="editorPanel" class="editor-panel" aria-label="Prop placement editor" hidden>
+      <div class="editor-panel__header">
+        <div>
+          <p class="editor-panel__kicker">Placement Editor</p>
+          <h2 id="editorSelected" class="editor-panel__title">No prop selected</h2>
+        </div>
+        <button id="editorCloseButton" class="editor-panel__close" type="button" aria-label="Close editor">×</button>
+      </div>
+      <p id="editorStatus" class="editor-panel__status">Triple-click the far-right door to toggle this editor.</p>
+      <pre id="editorValues" class="editor-panel__values"></pre>
+      <div class="editor-panel__actions">
+        <button id="editorCopyButton" type="button">Copy placement</button>
+        <button id="editorResetButton" type="button">Reset</button>
+      </div>
+      <p class="editor-panel__hint">Drag selected props to move. Use the bottom-right handle to resize. Arrow keys nudge; Shift + arrow moves faster.</p>
+    </section>
   </main>
 
   <script src="data.js"></script>
