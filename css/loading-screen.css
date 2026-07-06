@@ -1,23 +1,45 @@
 /*
-  Feisk Productions image-based hatch entry screen.
-  This file is intentionally scoped to the current prototype IDs/classes.
-  It replaces the older snippet CSS that hid .loading-screen unless .is-active existed.
+  Feisk Productions image-based jungle hatch entry screen.
+  Uses separate portrait/landscape loading backgrounds with the hatch/sign layered above.
 */
 
 .loading-screen--image-assets {
+  --loading-bg: url('../assets/backgrounds/loading-jungle-landscape.png');
+  --hatch-left: 61%;
+  --hatch-top: 65%;
+  --hatch-width: clamp(190px, 24vw, 360px);
+  --sign-left: 50%;
+  --sign-top: clamp(18px, 5vh, 50px);
+  --sign-width: min(42vw, 420px);
+
   position: fixed;
   inset: 0;
   z-index: 9999;
   display: grid !important;
   place-items: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 38%, rgba(120, 120, 120, 0.18), transparent 38%),
-    linear-gradient(180deg, #080808 0%, #111 45%, #050505 100%);
+  background-color: #020503;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.28)),
+    var(--loading-bg);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transition: opacity 850ms ease, transform 850ms ease, visibility 850ms ease;
+}
+
+.loading-screen--image-assets::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 45%, rgba(0, 0, 0, 0.28) 82%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.34));
 }
 
 .loading-screen__fog,
@@ -28,14 +50,17 @@
 }
 
 .loading-screen__fog {
+  z-index: 2;
   background:
-    radial-gradient(circle at 50% 55%, rgba(210, 180, 110, 0.10), transparent 38%),
-    radial-gradient(circle at 20% 85%, rgba(110, 140, 160, 0.08), transparent 34%);
+    radial-gradient(circle at 47% 23%, rgba(230, 230, 170, 0.20), transparent 30%),
+    radial-gradient(circle at 60% 62%, rgba(140, 170, 95, 0.09), transparent 38%);
   mix-blend-mode: screen;
+  opacity: 0.75;
 }
 
 .loading-screen__grain {
-  opacity: 0.22;
+  z-index: 8;
+  opacity: 0.14;
   background-image: repeating-linear-gradient(
     0deg,
     rgba(255, 255, 255, 0.08) 0 1px,
@@ -45,21 +70,23 @@
 
 .loading-sign-image {
   position: absolute;
-  left: 50%;
-  top: clamp(26px, 7vh, 70px);
-  width: min(58vw, 440px);
+  left: var(--sign-left);
+  top: var(--sign-top);
+  width: var(--sign-width);
   transform: translateX(-50%);
-  filter: drop-shadow(0 0 18px rgba(255, 185, 80, 0.22));
+  filter:
+    drop-shadow(0 8px 14px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 0 18px rgba(255, 185, 80, 0.22));
   user-select: none;
   pointer-events: none;
-  z-index: 2;
+  z-index: 5;
 }
 
 .loading-hatch-button {
   position: absolute;
-  left: 50%;
-  top: 52%;
-  width: min(48vmin, 430px);
+  left: var(--hatch-left);
+  top: var(--hatch-top);
+  width: var(--hatch-width);
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
   border: 0;
@@ -67,7 +94,23 @@
   background: transparent;
   cursor: wait;
   user-select: none;
-  z-index: 3;
+  z-index: 6;
+  touch-action: manipulation;
+}
+
+.loading-hatch-button::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 94%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.48), transparent 68%);
+  filter: blur(6px);
+  z-index: -1;
+  opacity: 0.82;
 }
 
 .app--ready .loading-hatch-button {
@@ -116,7 +159,7 @@
 }
 
 .app--inside #loadingScreen,
-#loadingScreen[aria-hidden="true"] {
+#loadingScreen[aria-hidden='true'] {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -162,21 +205,36 @@
 }
 
 @media (orientation: portrait) {
-  .loading-sign-image {
-    top: 9vh;
-    width: min(76vw, 390px);
-  }
-
-  .loading-hatch-button {
-    top: 52%;
-    width: min(72vw, 380px);
+  .loading-screen--image-assets {
+    --loading-bg: url('../assets/backgrounds/loading-jungle-portrait.png');
+    --hatch-left: 50%;
+    --hatch-top: 73%;
+    --hatch-width: min(56vw, 360px);
+    --sign-left: 50%;
+    --sign-top: max(24px, 5.5vh);
+    --sign-width: min(74vw, 390px);
+    background-position: center center;
   }
 
   .loading-panel {
     left: 50%;
     right: auto;
-    bottom: max(18px, env(safe-area-inset-bottom));
+    bottom: max(16px, env(safe-area-inset-bottom));
     width: min(88vw, 520px);
     transform: translateX(-50%);
+    z-index: 7;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .loading-screen--image-assets {
+    --hatch-top: 67%;
+    --hatch-width: clamp(150px, 22vw, 260px);
+    --sign-top: 14px;
+    --sign-width: min(34vw, 330px);
+  }
+
+  .loading-panel {
+    bottom: 12px;
   }
 }
