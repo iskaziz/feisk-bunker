@@ -97,6 +97,65 @@ window.FEISK_ASSETS = {
       width: 61.5,
       height: 20.5
     }
+
+  ],
+  computerIcons: [
+    {
+      id: 'about-feisk',
+      label: 'About Feisk',
+      icon: '▣',
+      title: 'Feisk Productions',
+      kicker: 'Company File',
+      body: 'Feisk Sdn Bhd was founded in December 2010 by brothers Iskander and Feisal Azizuddin. The company creates content for film, television and digital platforms.'
+    },
+    {
+      id: 'feature-films',
+      label: 'Feature Films',
+      icon: '▤',
+      title: 'Feature Films / Platforms',
+      kicker: 'Distribution Records',
+      body: 'The Feisk archive includes feature films and screen work connected to Netflix, Amazon Prime, VIU, Astro and Tubi. Future versions of this terminal can open film-specific folders, posters, trailers and production notes.'
+    },
+    {
+      id: 'short-films',
+      label: 'Short Films',
+      icon: '◈',
+      title: 'Notable Short Films',
+      kicker: 'Festival Archive',
+      body: 'Feisk regularly produces short films, mainly in the horror / thriller genre. Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.'
+    },
+    {
+      id: 'development-slate',
+      label: 'Dev Slate',
+      icon: '⌘',
+      title: 'Projects in Post / Development',
+      kicker: 'Restricted Folder',
+      body: 'Current archive notes list four feature films in post-production: crime thriller Curi Makan, fantasy thriller Writers, desktop thriller Send Tudes, and satay-western Selendangs & Shotguns.'
+    },
+    {
+      id: 'iskander',
+      label: 'Iskander',
+      icon: '☉',
+      title: 'Iskander Azizuddin',
+      kicker: 'Producer Profile',
+      body: 'Iskander is a Malaysian film producer with over 15 years of experience in the creative and media industry. His projects have been presented at Asian Film Market and Singapore\'s Southeast Asian Film Financing Forum, and he was selected as a Bucheon Fantastic Film School Fellow in 2019.'
+    },
+    {
+      id: 'feisal',
+      label: 'Feisal',
+      icon: '✦',
+      title: 'Feisal Azizuddin',
+      kicker: 'Filmmaker Profile',
+      body: 'Feisal is a Malaysia-based filmmaker whose short films often explore social issues through horror, thriller and dramatic forms. His work has screened at festivals including Jogja-NETPAC Asian Film Festival, Monterrey International Film Festival, Bangkok ASEAN Film Festival and George Town Festival.'
+    },
+    {
+      id: 'contact',
+      label: 'Contact',
+      icon: '☎',
+      title: 'Contact Line',
+      kicker: 'Surface Communications',
+      body: 'For production enquiries, collaborations and archive access: get.creative@feisk.com.my'
+    }
   ]
 };
 window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;

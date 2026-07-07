@@ -8,7 +8,7 @@ const sceneViewport = document.querySelector('#sceneViewport');
 const sceneStage = document.querySelector('#sceneStage');
 const bunkerBackground = document.querySelector('#bunkerBackground');
 const hotspotsLayer = document.querySelector('#hotspotsLayer');
-const editDoorHotspot = document.querySelector('#editDoorHotspot');
+const editLadderHotspot = document.querySelector('#editLadderHotspot');
 const panelBackdrop = document.querySelector('#panelBackdrop');
 const infoPanel = document.querySelector('#infoPanel');
 const closePanelButton = document.querySelector('#closePanelButton');
@@ -26,6 +26,16 @@ const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
 const editorMinimiseButton = document.querySelector('#editorMinimiseButton');
+const dustLayer = document.querySelector('#dustLayer');
+const rotatePrompt = document.querySelector('#rotatePrompt');
+const forceRotateButton = document.querySelector('#forceRotateButton');
+const continuePortraitButton = document.querySelector('#continuePortraitButton');
+const computerOverlay = document.querySelector('#computerOverlay');
+const computerIcons = document.querySelector('#computerIcons');
+const computerCloseButton = document.querySelector('#computerCloseButton');
+const computerWindowKicker = document.querySelector('#computerWindowKicker');
+const computerWindowTitle = document.querySelector('#computerWindowTitle');
+const computerWindowBody = document.querySelector('#computerWindowBody');
 
 const DEFAULT_ASSETS = { backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-final.png' }, hotspots: [] };
 const ACTIVE_ASSETS = window.FEISK_ASSETS || DEFAULT_ASSETS;
@@ -47,12 +57,15 @@ const appState = {
   pointer: null,
   hotspotDrag: null,
   resizeDrag: null,
-  editorDrag: null
+  editorDrag: null,
+  rotatePromptDismissed: false,
+  computerOpen: false
 };
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function round1(value) { return Math.round(value * 10) / 10; }
 function isPortraitMobile() { return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches; }
+function shouldShowRotatePrompt() { return isPortraitMobile() && appState.entered && !appState.rotatePromptDismissed; }
 
 function setLoadingBackgroundVariables() {
   const backgrounds = ACTIVE_ASSETS.backgrounds || {};
@@ -118,6 +131,83 @@ function applyHotspotStyle(el, hotspot) {
   el.style.height = `${hotspot.height}%`;
 }
 
+function createDustParticles() {
+  if (!dustLayer || dustLayer.childElementCount) return;
+  const count = window.matchMedia('(max-width: 820px)').matches ? 28 : 46;
+  for (let i = 0; i < count; i += 1) {
+    const particle = document.createElement('span');
+    particle.className = 'dust-particle';
+    particle.style.setProperty('--dust-left', `${Math.random() * 100}%`);
+    particle.style.setProperty('--dust-size', `${1 + Math.random() * 2.2}px`);
+    particle.style.setProperty('--dust-duration', `${14 + Math.random() * 18}s`);
+    particle.style.setProperty('--dust-delay', `${-Math.random() * 22}s`);
+    particle.style.setProperty('--dust-drift', `${-45 + Math.random() * 90}px`);
+    dustLayer.appendChild(particle);
+  }
+}
+
+function renderComputerIcons() {
+  if (!computerIcons) return;
+  const items = ACTIVE_ASSETS.computerIcons || [];
+  computerIcons.innerHTML = '';
+  items.forEach((item, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'computer-icon';
+    button.dataset.iconId = item.id;
+    button.innerHTML = `<span class="computer-icon__symbol" aria-hidden="true">${item.icon || '▣'}</span><span class="computer-icon__label">${item.label || item.title}</span>`;
+    button.addEventListener('click', () => selectComputerIcon(item.id));
+    computerIcons.appendChild(button);
+    if (index === 0) setTimeout(() => selectComputerIcon(item.id), 0);
+  });
+}
+
+function selectComputerIcon(id) {
+  const item = (ACTIVE_ASSETS.computerIcons || []).find((entry) => entry.id === id);
+  if (!item) return;
+  document.querySelectorAll('.computer-icon').forEach((el) => el.classList.toggle('is-selected', el.dataset.iconId === id));
+  computerWindowKicker.textContent = item.kicker || 'Archive File';
+  computerWindowTitle.textContent = item.title || item.label || id;
+  computerWindowBody.textContent = item.body || '';
+}
+
+function openComputerOverlay() {
+  appState.computerOpen = true;
+  closeInfoPanel();
+  app.classList.add('app--computer-open');
+  computerOverlay.setAttribute('aria-hidden', 'false');
+  renderComputerIcons();
+}
+
+function closeComputerOverlay() {
+  appState.computerOpen = false;
+  app.classList.remove('app--computer-open');
+  computerOverlay.setAttribute('aria-hidden', 'true');
+}
+
+function showRotatePromptIfNeeded() {
+  if (!rotatePrompt) return;
+  rotatePrompt.hidden = !shouldShowRotatePrompt();
+}
+
+async function forceRotate() {
+  appState.rotatePromptDismissed = true;
+  rotatePrompt.hidden = true;
+  try {
+    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+  } catch (error) {
+    updateEditorStatus?.('Rotate lock is not supported by this browser. Please rotate manually or continue in portrait.');
+  }
+}
+
+function continuePortrait() {
+  appState.rotatePromptDismissed = true;
+  if (rotatePrompt) rotatePrompt.hidden = true;
+}
+
 function renderHotspots() {
   hotspotsLayer.innerHTML = '';
   hotspots.forEach((hotspot) => {
@@ -141,6 +231,10 @@ function renderHotspots() {
         return;
       }
       if (appState.pointer?.dragged) return;
+      if (hotspot.id === 'old-desktop-computer') {
+        openComputerOverlay();
+        return;
+      }
       openInfoPanel(hotspot.id);
     });
 
@@ -247,6 +341,7 @@ function enterBunker() {
     app.classList.add('app--inside');
     updateStageSize();
     centerPan();
+    showRotatePromptIfNeeded();
   }, 900);
 }
 
@@ -274,8 +369,8 @@ function closeInfoPanel() {
 function handleDoorTripleClick() {
   if (!appState.entered) return;
   appState.doorClickCount += 1;
-  editDoorHotspot.classList.add('editor-door-hotspot--ping');
-  setTimeout(() => editDoorHotspot.classList.remove('editor-door-hotspot--ping'), 180);
+  editLadderHotspot.classList.add('editor-ladder-hotspot--ping');
+  setTimeout(() => editLadderHotspot.classList.remove('editor-ladder-hotspot--ping'), 180);
   clearTimeout(appState.doorClickTimer);
   if (appState.doorClickCount >= 3) {
     appState.doorClickCount = 0;
@@ -292,7 +387,7 @@ function toggleEditorMode(force) {
   if (appState.editorMode) {
     closeInfoPanel();
     selectHotspot(appState.selectedId || hotspots[0]?.id);
-    updateEditorStatus('Editor mode enabled. Drag hotspots or resize with the gold handle.');
+    updateEditorStatus('Editor mode enabled. Triple-click the ladder again or close this panel to exit.');
   }
 }
 
@@ -411,7 +506,7 @@ function bindEvents() {
   hatchButton.addEventListener('click', enterBunker);
   closePanelButton.addEventListener('click', closeInfoPanel);
   panelBackdrop.addEventListener('click', closeInfoPanel);
-  editDoorHotspot.addEventListener('click', handleDoorTripleClick);
+  editLadderHotspot.addEventListener('click', handleDoorTripleClick);
   sceneViewport.addEventListener('pointerdown', onViewportPointerDown);
   sceneViewport.addEventListener('pointermove', onViewportPointerMove);
   sceneViewport.addEventListener('pointerup', onViewportPointerUp);
@@ -427,10 +522,17 @@ function bindEvents() {
   window.addEventListener('resize', () => {
     updateStageSize();
     if (!appState.hasUserPanned) centerPan();
+    showRotatePromptIfNeeded();
   });
+  window.addEventListener('orientationchange', () => setTimeout(showRotatePromptIfNeeded, 250));
+  computerCloseButton.addEventListener('click', closeComputerOverlay);
+  computerOverlay.addEventListener('click', (event) => { if (event.target === computerOverlay) closeComputerOverlay(); });
+  forceRotateButton.addEventListener('click', forceRotate);
+  continuePortraitButton.addEventListener('click', continuePortrait);
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      if (appState.editorMode) toggleEditorMode(false);
+      if (appState.computerOpen) closeComputerOverlay();
+      else if (appState.editorMode) toggleEditorMode(false);
       else if (appState.panelOpen) closeInfoPanel();
     }
   });
@@ -439,6 +541,8 @@ function bindEvents() {
 function boot() {
   renderBackground();
   renderHotspots();
+  renderComputerIcons();
+  createDustParticles();
   bindEvents();
   preloadAssets().catch(() => unlockHatch());
   setTimeout(() => { if (!appState.loaded) unlockHatch(); }, 6000);
