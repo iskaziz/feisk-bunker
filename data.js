@@ -1,5 +1,6 @@
 /* Feisk Productions Vault data file.
-   IMPORTANT: Keep this file valid JavaScript. Do not place raw line breaks inside quoted strings.
+   IMPORTANT: Keep this file valid JavaScript.
+   Do not place raw line breaks inside quoted strings.
    Hotspot values are percentages relative to assets/backgrounds/bunker-room-final.png.
 */
 window.FEISK_ASSETS = {
@@ -102,7 +103,7 @@ window.FEISK_ASSETS = {
       label: 'Vault Door',
       title: 'Vault Door',
       kicker: 'Restricted Exit',
-      body: 'The heavy vault door leads deeper into the Feisk archive. Future versions can use this as navigation to another room or hidden page.',
+      body: 'The heavy vault door leads deeper into the Feisk archive.\n\nFuture versions can use this as navigation to another room or hidden page.',
       x: 80.1,
       y: 25.8,
       width: 14.8,
