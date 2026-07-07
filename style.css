@@ -325,11 +325,16 @@ button {
 
   .scene-viewport--portrait-scroll {
     display: block;
-    overflow-x: scroll;
+    overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
-    touch-action: pan-x pinch-zoom;
+    touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
+    cursor: grab;
+  }
+
+  .scene-viewport--portrait-scroll.is-portrait-panning {
+    cursor: grabbing;
   }
 
   .scene-viewport--portrait-scroll .scene-stage {
@@ -339,7 +344,7 @@ button {
     max-width: none;
     min-width: 960px;
     margin: 0;
-    touch-action: pan-x pinch-zoom;
+    touch-action: pan-x;
   }
 
   .app--editor .scene-viewport--portrait-scroll .scene-stage {
@@ -347,7 +352,12 @@ button {
   }
 
   .hotspots-layer {
-    touch-action: pan-x pinch-zoom;
+    touch-action: pan-x;
+  }
+
+  .scene-hotspot,
+  .editor-door-hotspot {
+    touch-action: pan-x;
   }
 
   .app--editor .hotspots-layer,

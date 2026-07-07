@@ -61,7 +61,9 @@ const appState = {
   editorPanelDragState: null,
   editorMinimized: false,
   portraitHasBeenCentered: false,
-  portraitUserHasPanned: false
+  portraitUserHasPanned: false,
+  portraitPanState: null,
+  suppressNextHotspotClick: false
 };
 
 function clamp(value, min, max) {
@@ -222,6 +224,13 @@ function renderHotspots() {
     button.append(label, moveHandle, resizeHandle);
 
     button.addEventListener('click', (event) => {
+      if (appState.suppressNextHotspotClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        appState.suppressNextHotspotClick = false;
+        return;
+      }
+
       if (appState.editorMode) {
         event.preventDefault();
         event.stopPropagation();
@@ -320,6 +329,61 @@ function centerPortraitSceneOnce() {
 function markPortraitUserPanned() {
   if (sceneViewport.classList.contains('scene-viewport--portrait-scroll')) {
     appState.portraitUserHasPanned = true;
+  }
+}
+
+function isPortraitPanMode() {
+  return sceneViewport.classList.contains('scene-viewport--portrait-scroll') && !appState.editorMode;
+}
+
+function beginPortraitPan(event) {
+  if (!isPortraitPanMode()) return;
+  if (event.button !== undefined && event.button !== 0) return;
+  if (event.target.closest('.info-panel, .mobile-orientation, .editor-panel')) return;
+
+  appState.portraitUserHasPanned = true;
+  appState.portraitPanState = {
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startScrollLeft: sceneViewport.scrollLeft,
+    hasMoved: false
+  };
+
+  sceneViewport.classList.add('is-portrait-panning');
+  sceneViewport.setPointerCapture?.(event.pointerId);
+}
+
+function movePortraitPan(event) {
+  const pan = appState.portraitPanState;
+  if (!pan || pan.pointerId !== event.pointerId) return false;
+
+  const dx = event.clientX - pan.startClientX;
+  const dy = event.clientY - pan.startClientY;
+
+  if (!pan.hasMoved && Math.abs(dx) < 4 && Math.abs(dy) < 8) return true;
+
+  pan.hasMoved = true;
+  appState.suppressNextHotspotClick = true;
+  event.preventDefault();
+
+  const maxScroll = Math.max(0, sceneViewport.scrollWidth - sceneViewport.clientWidth);
+  const nextScroll = clamp(pan.startScrollLeft - dx, 0, maxScroll);
+  sceneViewport.scrollLeft = nextScroll;
+  return true;
+}
+
+function endPortraitPan(event) {
+  const pan = appState.portraitPanState;
+  if (!pan || (event?.pointerId !== undefined && pan.pointerId !== event.pointerId)) return;
+
+  sceneViewport.classList.remove('is-portrait-panning');
+  appState.portraitPanState = null;
+
+  if (pan.hasMoved) {
+    window.setTimeout(() => {
+      appState.suppressNextHotspotClick = false;
+    }, 120);
   }
 }
 
@@ -464,6 +528,8 @@ function moveEditorPanel(event) {
 }
 
 function handlePointerMove(event) {
+  if (movePortraitPan(event)) return;
+
   if (appState.editorPanelDragState) {
     moveEditorPanel(event);
     return;
@@ -502,7 +568,8 @@ function handlePointerMove(event) {
   }
 }
 
-function handlePointerUp() {
+function handlePointerUp(event) {
+  endPortraitPan(event);
   appState.dragState = null;
   appState.resizeState = null;
   appState.editorPanelDragState = null;
@@ -625,7 +692,8 @@ function init() {
   window.addEventListener('pointermove', handlePointerMove);
   window.addEventListener('pointerup', handlePointerUp);
   sceneViewport.addEventListener('scroll', markPortraitUserPanned, { passive: true });
-  sceneViewport.addEventListener('pointerdown', markPortraitUserPanned, { passive: true });
+  sceneViewport.addEventListener('pointerdown', beginPortraitPan);
+  sceneViewport.addEventListener('pointercancel', endPortraitPan);
   sceneViewport.addEventListener('touchstart', markPortraitUserPanned, { passive: true });
   window.addEventListener('resize', checkMobileOrientation);
   window.addEventListener('orientationchange', () => window.setTimeout(checkMobileOrientation, 250));
