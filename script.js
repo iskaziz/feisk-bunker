@@ -135,7 +135,11 @@ function applyHotspotStyle(el, hotspot) {
   el.classList.toggle('hotspot--ellipse', hotspot.shape === 'ellipse');
   el.classList.toggle('hotspot--polygon', hotspot.shape === 'polygon');
   el.style.borderRadius = hotspot.shape === 'ellipse' ? '999px' : `${hotspot.radius ?? 10}px`;
-  el.style.clipPath = hotspot.clipPath || '';
+  // IMPORTANT: do not apply clip-path to the actual button.
+  // Clipping the button can make touch/click hit testing unreliable on mobile browsers.
+  // Shape data is kept for editor/export and visual styling only.
+  el.style.clipPath = '';
+  el.style.webkitClipPath = '';
 }
 
 function createDustParticles() {
@@ -261,7 +265,12 @@ function renderHotspots() {
     });
 
     button.addEventListener('pointerdown', (event) => {
-      if (!appState.editorMode) return;
+      // In normal browsing mode, prevent the portrait pan handler on the scene viewport
+      // from swallowing the subsequent click/tap. This restores reliable hotspot clicks.
+      if (!appState.editorMode) {
+        event.stopPropagation();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       selectHotspot(hotspot.id);
