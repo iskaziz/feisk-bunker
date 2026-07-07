@@ -1,3 +1,9 @@
+
+/* Critical visibility guard: author CSS display rules must not override the HTML hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --color-black: #030405;
   --color-warning: #d7b25a;

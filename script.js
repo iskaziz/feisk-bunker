@@ -187,25 +187,40 @@ function closeComputerOverlay() {
 
 function showRotatePromptIfNeeded() {
   if (!rotatePrompt) return;
-  rotatePrompt.hidden = !shouldShowRotatePrompt();
+  const show = shouldShowRotatePrompt();
+  rotatePrompt.hidden = !show;
+  rotatePrompt.setAttribute('aria-hidden', show ? 'false' : 'true');
+}
+
+function hideRotatePrompt() {
+  appState.rotatePromptDismissed = true;
+  if (!rotatePrompt) return;
+  rotatePrompt.hidden = true;
+  rotatePrompt.setAttribute('aria-hidden', 'true');
 }
 
 async function forceRotate() {
-  appState.rotatePromptDismissed = true;
-  rotatePrompt.hidden = true;
+  // Always dismiss the prompt first. Orientation lock is optional and browser-dependent.
+  hideRotatePrompt();
   try {
     if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
       await document.documentElement.requestFullscreen();
     }
-    if (screen.orientation?.lock) await screen.orientation.lock('landscape');
+    if (screen.orientation?.lock) {
+      await screen.orientation.lock('landscape');
+    }
   } catch (error) {
-    updateEditorStatus?.('Rotate lock is not supported by this browser. Please rotate manually or continue in portrait.');
+    console.info('[Feisk] Rotate lock not supported by this browser:', error);
+  } finally {
+    updateStageSize();
+    centerPan();
   }
 }
 
 function continuePortrait() {
-  appState.rotatePromptDismissed = true;
-  if (rotatePrompt) rotatePrompt.hidden = true;
+  hideRotatePrompt();
+  updateStageSize();
+  centerPan();
 }
 
 function renderHotspots() {
@@ -527,8 +542,8 @@ function bindEvents() {
   window.addEventListener('orientationchange', () => setTimeout(showRotatePromptIfNeeded, 250));
   computerCloseButton.addEventListener('click', closeComputerOverlay);
   computerOverlay.addEventListener('click', (event) => { if (event.target === computerOverlay) closeComputerOverlay(); });
-  forceRotateButton.addEventListener('click', forceRotate);
-  continuePortraitButton.addEventListener('click', continuePortrait);
+  forceRotateButton?.addEventListener('click', forceRotate);
+  continuePortraitButton?.addEventListener('click', continuePortrait);
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       if (appState.computerOpen) closeComputerOverlay();
