@@ -4,48 +4,45 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Feisk Productions Vault</title>
-  <link rel="stylesheet" href="style.css?v=effects-computer" />
-  <link rel="stylesheet" href="css/loading-screen.css?v=effects-computer" />
-  <link rel="stylesheet" href="prop-placement.css?v=effects-computer" />
+  <link rel="stylesheet" href="css/loading-screen.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="prop-placement.css" />
 </head>
 <body>
   <main id="app" class="app app--loading">
-    <section id="loadingScreen" class="loading-screen screen" aria-label="Feisk Productions vault entrance">
-      <div class="loading-bg" aria-hidden="true"></div>
-      <div class="loading-vignette" aria-hidden="true"></div>
-
-      <img class="loading-sign-image" src="assets/ui/feisk-sign.png" alt="Feisk Productions" draggable="false" />
-
-      <button id="hatchButton" class="loading-hatch-button" type="button" disabled aria-label="Open vault hatch">
-        <img id="hatchClosed" class="hatch-img hatch-img--closed" src="assets/ui/hatch-closed.png" alt="Closed vault hatch" draggable="false" />
-        <img id="hatchOpen" class="hatch-img hatch-img--open" src="assets/ui/hatch-open.png" alt="Open vault hatch with ladder" draggable="false" />
+    <section id="loadingScreen" class="loading-screen screen" aria-label="Feisk Productions Vault loading screen">
+      <div class="loading-screen__bg" aria-hidden="true"></div>
+      <img class="loading-screen__sign" src="assets/ui/feisk-sign.png" alt="Feisk Productions" />
+      <button id="hatchButton" class="loading-screen__hatch" type="button" disabled aria-label="Click the vault hatch to enter">
+        <img class="loading-screen__hatch-closed" src="assets/ui/hatch-closed.png" alt="Closed vault hatch" />
+        <img class="loading-screen__hatch-open" src="assets/ui/hatch-open.png" alt="Open vault hatch with ladder" />
       </button>
-
-      <div class="loading-panel" role="status" aria-live="polite">
-        <div id="loadingText" class="loading-panel__text">Loading vault assets...</div>
-        <div class="loading-bar" aria-hidden="true"><div id="loadingProgress" class="loading-bar__fill"></div></div>
+      <div class="loading-screen__status">
+        <p id="loadingText">Loading vault assets...</p>
+        <div class="loading-screen__progress" aria-hidden="true">
+          <span id="loadingProgress"></span>
+        </div>
       </div>
     </section>
 
     <section id="bunkerScene" class="bunker-scene screen" aria-label="Feisk Productions bunker room">
-      <div class="bunker-effects" aria-hidden="true">
-        <div class="bunker-light-flicker"></div>
-        <div id="dustLayer" class="dust-layer"></div>
-      </div>
       <div id="sceneViewport" class="scene-viewport">
         <div id="sceneStage" class="scene-stage">
           <img id="bunkerBackground" class="bunker-scene__image" src="" alt="Feisk Productions bunker room" draggable="false" />
-          <div id="hotspotsLayer" class="hotspots-layer" aria-label="Interactive bunker hotspots"></div>
-          <button id="editLadderHotspot" class="edit-ladder-hotspot" type="button" aria-label="Hidden ladder editor trigger"></button>
+          <div class="bunker-effects" aria-hidden="true">
+            <div class="bunker-light-flicker"></div>
+            <div id="dustLayer" class="dust-layer"></div>
+          </div>
+          <div id="hotspotsLayer" class="hotspots-layer" aria-label="Interactive bunker objects"></div>
+          <button id="editLadderHotspot" class="edit-ladder-hotspot" type="button" aria-label="Hidden editor trigger"></button>
         </div>
       </div>
-      <div class="pan-hint" aria-hidden="true">Drag sideways to inspect the bunker</div>
+      <div id="panHint" class="pan-hint">Drag sideways to inspect the bunker</div>
     </section>
 
-    <div id="panelBackdrop" class="panel-backdrop" hidden></div>
-    <div id="rotatePrompt" class="rotate-prompt" hidden>
-      <div class="rotate-prompt__card">
-        <div class="rotate-prompt__icon" aria-hidden="true">↻</div>
+    <section id="rotatePrompt" class="rotate-prompt" hidden aria-hidden="true">
+      <div class="rotate-prompt__panel">
+        <div class="rotate-prompt__icon">↻</div>
         <h2>Rotate for full bunker view</h2>
         <p>This vault is designed as a widescreen point-and-click scene.</p>
         <div class="rotate-prompt__actions">
@@ -53,48 +50,48 @@
           <button id="continuePortraitButton" type="button">Continue in portrait</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <article id="infoPanel" class="info-panel" aria-hidden="true" aria-modal="true" role="dialog">
-      <button id="closePanelButton" class="info-panel__close" type="button" aria-label="Close panel">×</button>
+    <div id="panelBackdrop" class="panel-backdrop" hidden></div>
+    <article id="infoPanel" class="info-panel" aria-hidden="true" role="dialog" aria-modal="true">
+      <button id="closePanelButton" class="info-panel__close" type="button" aria-label="Close information panel">×</button>
       <p id="infoKicker" class="info-panel__kicker"></p>
       <h2 id="infoTitle" class="info-panel__title"></h2>
-      <div class="info-panel__scroll"><p id="infoBody" class="info-panel__body"></p></div>
+      <div class="info-panel__scroll">
+        <p id="infoBody" class="info-panel__body"></p>
+      </div>
     </article>
 
     <section id="computerOverlay" class="computer-overlay" aria-hidden="true" role="dialog" aria-modal="true">
-      <div class="computer-screen">
-        <header class="computer-screen__bar">
-          <div>
-            <p class="computer-screen__kicker">FEISK TERMINAL // ARCHIVE ACCESS</p>
-            <h2>Vault Desktop</h2>
-          </div>
-          <button id="computerCloseButton" type="button" aria-label="Close computer overlay">×</button>
+      <div class="computer-terminal">
+        <header class="computer-terminal__header">
+          <span>FEISK TERMINAL // ARCHIVE ACCESS</span>
+          <button id="computerCloseButton" type="button" aria-label="Close computer terminal">×</button>
         </header>
-        <div class="computer-screen__body">
-          <nav id="computerIcons" class="computer-icons" aria-label="Feisk terminal icons"></nav>
+        <div class="computer-terminal__body">
+          <nav id="computerIcons" class="computer-icons" aria-label="Computer archive icons"></nav>
           <article class="computer-window">
             <p id="computerWindowKicker" class="computer-window__kicker">Select a file</p>
-            <h3 id="computerWindowTitle">Feisk Productions</h3>
+            <h2 id="computerWindowTitle">Feisk Productions</h2>
             <p id="computerWindowBody">Choose an icon to open a bunker archive window.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <aside id="editorPanel" class="editor-panel" hidden aria-label="Placement editor">
+    <aside id="editorPanel" class="editor-panel" hidden>
       <header id="editorHeader" class="editor-panel__header">
-        <strong>Placement Editor</strong>
-        <div class="editor-panel__header-buttons">
-          <button id="editorMinimiseButton" type="button" title="Minimise editor">–</button>
-          <button id="editorCloseButton" type="button" title="Close editor">×</button>
+        <span>Placement Editor</span>
+        <div class="editor-panel__window-buttons">
+          <button id="editorMinimiseButton" type="button" aria-label="Minimise editor">–</button>
+          <button id="editorCloseButton" type="button" aria-label="Close editor">×</button>
         </div>
       </header>
       <div id="editorBody" class="editor-panel__body">
         <p id="editorStatus" class="editor-panel__status">Triple-click the ladder to toggle this editor.</p>
         <h3 id="editorSelected">No hotspot selected</h3>
         <pre id="editorValues"></pre>
-        <div class="editor-panel__actions">
+        <div class="editor-panel__buttons">
           <button id="editorCopyButton" type="button">Copy placement</button>
           <button id="editorDownloadButton" type="button">Download data.js</button>
           <button id="editorResetButton" type="button">Reset</button>
@@ -104,8 +101,8 @@
     </aside>
   </main>
 
-  <script src="js/loading-screen.js?v=effects-computer"></script>
-  <script src="data.js?v=effects-computer"></script>
-  <script src="script.js?v=effects-computer"></script>
+  <script src="js/loading-screen.js"></script>
+  <script src="data.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

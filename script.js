@@ -17,7 +17,6 @@ const infoTitle = document.querySelector('#infoTitle');
 const infoBody = document.querySelector('#infoBody');
 const editorPanel = document.querySelector('#editorPanel');
 const editorHeader = document.querySelector('#editorHeader');
-const editorBody = document.querySelector('#editorBody');
 const editorStatus = document.querySelector('#editorStatus');
 const editorSelected = document.querySelector('#editorSelected');
 const editorValues = document.querySelector('#editorValues');
@@ -37,7 +36,16 @@ const computerWindowKicker = document.querySelector('#computerWindowKicker');
 const computerWindowTitle = document.querySelector('#computerWindowTitle');
 const computerWindowBody = document.querySelector('#computerWindowBody');
 
-const DEFAULT_ASSETS = { backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-final.png' }, hotspots: [] };
+const DEFAULT_ASSETS = {
+  backgrounds: {
+    bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
+    loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
+    loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
+  },
+  hotspots: [],
+  computerIcons: []
+};
+
 const ACTIVE_ASSETS = window.FEISK_ASSETS || DEFAULT_ASSETS;
 const hotspots = Array.isArray(ACTIVE_ASSETS.hotspots) ? ACTIVE_ASSETS.hotspots : [];
 const originalHotspots = hotspots.map((hotspot) => ({ ...hotspot }));
@@ -48,13 +56,14 @@ const appState = {
   panelOpen: false,
   editorMode: false,
   selectedId: null,
-  doorClickCount: 0,
-  doorClickTimer: null,
+  ladderClickCount: 0,
+  ladderClickTimer: null,
   panX: 0,
   minPanX: 0,
   maxPanX: 0,
   hasUserPanned: false,
-  pointer: null,
+  panPointer: null,
+  suppressNextClick: false,
   hotspotDrag: null,
   resizeDrag: null,
   editorDrag: null,
@@ -62,24 +71,33 @@ const appState = {
   computerOpen: false
 };
 
-function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
-function round1(value) { return Math.round(value * 10) / 10; }
-function isPortraitMobile() { return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches; }
-function shouldShowRotatePrompt() { return isPortraitMobile() && appState.entered && !appState.rotatePromptDismissed; }
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function round1(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function isPortraitMobile() {
+  return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
+}
 
 function setLoadingBackgroundVariables() {
   const backgrounds = ACTIVE_ASSETS.backgrounds || {};
-  document.documentElement.style.setProperty('--loading-bg-image', `url('${backgrounds.loadingLandscape || 'assets/backgrounds/loading-jungle-landscape.png'}')`);
-  document.documentElement.style.setProperty('--loading-bg-image-portrait', `url('${backgrounds.loadingPortrait || 'assets/backgrounds/loading-jungle-portrait.png'}')`);
+  document.documentElement.style.setProperty('--loading-bg-image', `url('${backgrounds.loadingLandscape || DEFAULT_ASSETS.backgrounds.loadingLandscape}')`);
+  document.documentElement.style.setProperty('--loading-bg-image-portrait', `url('${backgrounds.loadingPortrait || DEFAULT_ASSETS.backgrounds.loadingPortrait}')`);
 }
 
 function preloadImage(src) {
   return new Promise((resolve) => {
-    if (!src) return resolve();
+    if (!src) {
+      resolve();
+      return;
+    }
     const img = new Image();
-    const done = () => resolve();
-    img.onload = done;
-    img.onerror = done;
+    img.onload = resolve;
+    img.onerror = resolve;
     img.src = src;
   });
 }
@@ -93,14 +111,17 @@ function getImageSources() {
 async function preloadAssets() {
   setLoadingBackgroundVariables();
   const sources = [...new Set(getImageSources())];
+  if (!sources.length) {
+    unlockHatch();
+    return;
+  }
   let doneCount = 0;
-  if (!sources.length) return unlockHatch();
   await Promise.all(sources.map(async (src) => {
     await preloadImage(src);
     doneCount += 1;
     const pct = Math.round((doneCount / sources.length) * 100);
-    loadingProgress.style.width = `${pct}%`;
-    loadingText.textContent = `Loading vault assets... ${pct}%`;
+    if (loadingProgress) loadingProgress.style.width = `${pct}%`;
+    if (loadingText) loadingText.textContent = `Loading vault assets... ${pct}%`;
   }));
   unlockHatch();
 }
@@ -122,24 +143,17 @@ function renderBackground() {
   });
 }
 
-function getHotspotById(id) { return hotspots.find((hotspot) => hotspot.id === id); }
+function getHotspotById(id) {
+  return hotspots.find((hotspot) => hotspot.id === id);
+}
 
 function applyHotspotStyle(el, hotspot) {
+  if (!el || !hotspot) return;
   el.style.left = `${hotspot.x}%`;
   el.style.top = `${hotspot.y}%`;
   el.style.width = `${hotspot.width}%`;
   el.style.height = `${hotspot.height}%`;
-
-  // Optional refined visual/click shapes. These keep the data.js file flexible:
-  // rect = normal box, ellipse = softer oval area, polygon = clipped custom shape.
-  el.classList.toggle('hotspot--ellipse', hotspot.shape === 'ellipse');
-  el.classList.toggle('hotspot--polygon', hotspot.shape === 'polygon');
   el.style.borderRadius = hotspot.shape === 'ellipse' ? '999px' : `${hotspot.radius ?? 10}px`;
-  // IMPORTANT: do not apply clip-path to the actual button.
-  // Clipping the button can make touch/click hit testing unreliable on mobile browsers.
-  // Shape data is kept for editor/export and visual styling only.
-  el.style.clipPath = '';
-  el.style.webkitClipPath = '';
 }
 
 function createDustParticles() {
@@ -166,7 +180,7 @@ function renderComputerIcons() {
     button.type = 'button';
     button.className = 'computer-icon';
     button.dataset.iconId = item.id;
-    button.innerHTML = `<span class="computer-icon__symbol" aria-hidden="true">${item.icon || '▣'}</span><span class="computer-icon__label">${item.label || item.title}</span>`;
+    button.textContent = `${item.icon || '▣'} ${item.label || item.title}`;
     button.addEventListener('click', () => selectComputerIcon(item.id));
     computerIcons.appendChild(button);
     if (index === 0) setTimeout(() => selectComputerIcon(item.id), 0);
@@ -176,7 +190,9 @@ function renderComputerIcons() {
 function selectComputerIcon(id) {
   const item = (ACTIVE_ASSETS.computerIcons || []).find((entry) => entry.id === id);
   if (!item) return;
-  document.querySelectorAll('.computer-icon').forEach((el) => el.classList.toggle('is-selected', el.dataset.iconId === id));
+  document.querySelectorAll('.computer-icon').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.iconId === id);
+  });
   computerWindowKicker.textContent = item.kicker || 'Archive File';
   computerWindowTitle.textContent = item.title || item.label || id;
   computerWindowBody.textContent = item.body || '';
@@ -196,8 +212,11 @@ function closeComputerOverlay() {
   computerOverlay.setAttribute('aria-hidden', 'true');
 }
 
+function shouldShowRotatePrompt() {
+  return isPortraitMobile() && appState.entered && !appState.rotatePromptDismissed;
+}
+
 function showRotatePromptIfNeeded() {
-  if (!rotatePrompt) return;
   const show = shouldShowRotatePrompt();
   rotatePrompt.hidden = !show;
   rotatePrompt.setAttribute('aria-hidden', show ? 'false' : 'true');
@@ -205,13 +224,11 @@ function showRotatePromptIfNeeded() {
 
 function hideRotatePrompt() {
   appState.rotatePromptDismissed = true;
-  if (!rotatePrompt) return;
   rotatePrompt.hidden = true;
   rotatePrompt.setAttribute('aria-hidden', 'true');
 }
 
 async function forceRotate() {
-  // Always dismiss the prompt first. Orientation lock is optional and browser-dependent.
   hideRotatePrompt();
   try {
     if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -250,13 +267,12 @@ function renderHotspots() {
     button.appendChild(resizeHandle);
 
     button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (appState.suppressNextClick) return;
       if (appState.editorMode) {
-        event.preventDefault();
-        event.stopPropagation();
         selectHotspot(hotspot.id);
         return;
       }
-      if (appState.pointer?.dragged) return;
       if (hotspot.id === 'old-desktop-computer') {
         openComputerOverlay();
         return;
@@ -265,12 +281,7 @@ function renderHotspots() {
     });
 
     button.addEventListener('pointerdown', (event) => {
-      // In normal browsing mode, prevent the portrait pan handler on the scene viewport
-      // from swallowing the subsequent click/tap. This restores reliable hotspot clicks.
-      if (!appState.editorMode) {
-        event.stopPropagation();
-        return;
-      }
+      if (!appState.editorMode) return;
       event.preventDefault();
       event.stopPropagation();
       selectHotspot(hotspot.id);
@@ -292,25 +303,26 @@ function renderHotspots() {
 function updateStageSize() {
   if (!sceneStage || !bunkerBackground) return;
   if (isPortraitMobile()) {
-    const ratio = bunkerBackground.naturalWidth && bunkerBackground.naturalHeight ? bunkerBackground.naturalWidth / bunkerBackground.naturalHeight : 16 / 9;
+    const ratio = bunkerBackground.naturalWidth && bunkerBackground.naturalHeight
+      ? bunkerBackground.naturalWidth / bunkerBackground.naturalHeight
+      : 16 / 9;
     const stageHeight = window.innerHeight;
     sceneStage.style.width = `${Math.ceil(stageHeight * ratio)}px`;
     sceneStage.style.height = `${stageHeight}px`;
   } else {
     sceneStage.style.width = '';
     sceneStage.style.height = '';
+    sceneStage.style.transform = '';
+    appState.panX = 0;
+    return;
   }
-  requestAnimationFrame(updatePanBounds);
+  updatePanBounds();
 }
 
 function updatePanBounds() {
-  if (!isPortraitMobile()) {
-    appState.panX = 0;
-    sceneStage.style.transform = '';
-    return;
-  }
+  if (!isPortraitMobile()) return;
   const viewportWidth = sceneViewport.clientWidth;
-  const stageWidth = sceneStage.getBoundingClientRect().width;
+  const stageWidth = sceneStage.offsetWidth;
   appState.maxPanX = 0;
   appState.minPanX = Math.min(0, viewportWidth - stageWidth);
   appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
@@ -323,18 +335,17 @@ function applyPan() {
 }
 
 function centerPan() {
-  updateStageSize();
+  updatePanBounds();
   if (!isPortraitMobile()) return;
-  const stageWidth = sceneStage.getBoundingClientRect().width;
   const viewportWidth = sceneViewport.clientWidth;
-  appState.panX = Math.round((viewportWidth - stageWidth) / 2);
-  appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
+  const stageWidth = sceneStage.offsetWidth;
+  appState.panX = clamp(Math.round((viewportWidth - stageWidth) / 2), appState.minPanX, appState.maxPanX);
   applyPan();
 }
 
 function onViewportPointerDown(event) {
-  if (!isPortraitMobile() || appState.editorMode || appState.panelOpen) return;
-  appState.pointer = {
+  if (!isPortraitMobile() || appState.editorMode || appState.panelOpen || appState.computerOpen) return;
+  appState.panPointer = {
     id: event.pointerId,
     startX: event.clientX,
     startPanX: appState.panX,
@@ -345,19 +356,21 @@ function onViewportPointerDown(event) {
 }
 
 function onViewportPointerMove(event) {
-  if (!appState.pointer || event.pointerId !== appState.pointer.id) return;
-  const delta = event.clientX - appState.pointer.startX;
-  if (Math.abs(delta) > 4) appState.pointer.dragged = true;
-  appState.panX = clamp(appState.pointer.startPanX + delta, appState.minPanX, appState.maxPanX);
+  if (!appState.panPointer || event.pointerId !== appState.panPointer.id) return;
+  const delta = event.clientX - appState.panPointer.startX;
+  if (Math.abs(delta) > 4) appState.panPointer.dragged = true;
+  appState.panX = clamp(appState.panPointer.startPanX + delta, appState.minPanX, appState.maxPanX);
   appState.hasUserPanned = true;
   applyPan();
 }
 
 function onViewportPointerUp(event) {
-  if (!appState.pointer || event.pointerId !== appState.pointer.id) return;
+  if (!appState.panPointer || event.pointerId !== appState.panPointer.id) return;
+  appState.suppressNextClick = appState.panPointer.dragged;
   sceneViewport.classList.remove('is-dragging');
   sceneViewport.releasePointerCapture(event.pointerId);
-  setTimeout(() => { appState.pointer = null; }, 0);
+  appState.panPointer = null;
+  setTimeout(() => { appState.suppressNextClick = false; }, 80);
 }
 
 function enterBunker() {
@@ -386,7 +399,9 @@ function openInfoPanel(id) {
   panelBackdrop.hidden = false;
   infoPanel.setAttribute('aria-hidden', 'false');
   app.classList.add('app--panel-open');
-  document.querySelectorAll('.hotspot').forEach((el) => el.classList.toggle('is-active', el.dataset.hotspotId === id));
+  document.querySelectorAll('.hotspot').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.hotspotId === id);
+  });
 }
 
 function closeInfoPanel() {
@@ -394,21 +409,25 @@ function closeInfoPanel() {
   infoPanel.setAttribute('aria-hidden', 'true');
   app.classList.remove('app--panel-open');
   document.querySelectorAll('.hotspot').forEach((el) => el.classList.remove('is-active'));
-  setTimeout(() => { if (!appState.panelOpen) panelBackdrop.hidden = true; }, 220);
+  setTimeout(() => {
+    if (!appState.panelOpen) panelBackdrop.hidden = true;
+  }, 220);
 }
 
-function handleDoorTripleClick() {
+function handleLadderTripleClick() {
   if (!appState.entered) return;
-  appState.doorClickCount += 1;
-  editLadderHotspot.classList.add('editor-ladder-hotspot--ping');
-  setTimeout(() => editLadderHotspot.classList.remove('editor-ladder-hotspot--ping'), 180);
-  clearTimeout(appState.doorClickTimer);
-  if (appState.doorClickCount >= 3) {
-    appState.doorClickCount = 0;
+  appState.ladderClickCount += 1;
+  editLadderHotspot.classList.add('edit-ladder-hotspot--ping');
+  setTimeout(() => editLadderHotspot.classList.remove('edit-ladder-hotspot--ping'), 180);
+  clearTimeout(appState.ladderClickTimer);
+  if (appState.ladderClickCount >= 3) {
+    appState.ladderClickCount = 0;
     toggleEditorMode();
     return;
   }
-  appState.doorClickTimer = setTimeout(() => { appState.doorClickCount = 0; }, 900);
+  appState.ladderClickTimer = setTimeout(() => {
+    appState.ladderClickCount = 0;
+  }, 900);
 }
 
 function toggleEditorMode(force) {
@@ -424,11 +443,15 @@ function toggleEditorMode(force) {
 
 function selectHotspot(id) {
   appState.selectedId = id;
-  document.querySelectorAll('.hotspot').forEach((el) => el.classList.toggle('is-selected', el.dataset.hotspotId === id));
+  document.querySelectorAll('.hotspot').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.hotspotId === id);
+  });
   updateEditorValues();
 }
 
-function updateEditorStatus(text) { editorStatus.textContent = text; }
+function updateEditorStatus(text) {
+  editorStatus.textContent = text;
+}
 
 function updateEditorValues() {
   const hotspot = getHotspotById(appState.selectedId);
@@ -438,7 +461,7 @@ function updateEditorValues() {
     return;
   }
   editorSelected.textContent = hotspot.label || hotspot.id;
-  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}\nshape: ${hotspot.shape || 'rect'}${hotspot.clipPath ? `\nclipPath: ${hotspot.clipPath}` : ''}`;
+  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}`;
 }
 
 function stagePointToPercent(clientX, clientY) {
@@ -452,14 +475,28 @@ function stagePointToPercent(clientX, clientY) {
 function startHotspotDrag(event, id) {
   const hotspot = getHotspotById(id);
   const start = stagePointToPercent(event.clientX, event.clientY);
-  appState.hotspotDrag = { id, pointerId: event.pointerId, startX: start.x, startY: start.y, originalX: hotspot.x, originalY: hotspot.y };
+  appState.hotspotDrag = {
+    id,
+    pointerId: event.pointerId,
+    startX: start.x,
+    startY: start.y,
+    originalX: hotspot.x,
+    originalY: hotspot.y
+  };
   event.currentTarget.setPointerCapture(event.pointerId);
 }
 
 function startResizeDrag(event, id) {
   const hotspot = getHotspotById(id);
   const start = stagePointToPercent(event.clientX, event.clientY);
-  appState.resizeDrag = { id, pointerId: event.pointerId, startX: start.x, startY: start.y, originalWidth: hotspot.width, originalHeight: hotspot.height };
+  appState.resizeDrag = {
+    id,
+    pointerId: event.pointerId,
+    startX: start.x,
+    startY: start.y,
+    originalWidth: hotspot.width,
+    originalHeight: hotspot.height
+  };
   event.currentTarget.parentElement.setPointerCapture(event.pointerId);
 }
 
@@ -473,6 +510,7 @@ function onWindowPointerMove(event) {
     applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
     updateEditorValues();
   }
+
   if (appState.resizeDrag && event.pointerId === appState.resizeDrag.pointerId) {
     const drag = appState.resizeDrag;
     const hotspot = getHotspotById(drag.id);
@@ -482,12 +520,14 @@ function onWindowPointerMove(event) {
     applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
     updateEditorValues();
   }
+
   if (appState.editorDrag && event.pointerId === appState.editorDrag.pointerId) {
     const drag = appState.editorDrag;
     const x = clamp(drag.startLeft + event.clientX - drag.startX, 0, window.innerWidth - editorPanel.offsetWidth);
     const y = clamp(drag.startTop + event.clientY - drag.startY, 0, window.innerHeight - 42);
     editorPanel.style.left = `${x}px`;
     editorPanel.style.top = `${y}px`;
+    editorPanel.style.bottom = 'auto';
   }
 }
 
@@ -498,7 +538,7 @@ function onWindowPointerUp(event) {
 }
 
 function exportDataJs() {
-  const content = `/* Feisk Productions Vault data file. Exported from the hotspot editor. */\nwindow.FEISK_ASSETS = ${JSON.stringify(ACTIVE_ASSETS, null, 2)};\nwindow.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;\n`;
+  const content = `window.FEISK_ASSETS = ${JSON.stringify(ACTIVE_ASSETS, null, 2)};\nwindow.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;\n`;
   const blob = new Blob([content], { type: 'text/javascript' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -529,7 +569,13 @@ function resetPlacement() {
 function startEditorDrag(event) {
   if (event.target.closest('button')) return;
   const rect = editorPanel.getBoundingClientRect();
-  appState.editorDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startLeft: rect.left, startTop: rect.top };
+  appState.editorDrag = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startLeft: rect.left,
+    startTop: rect.top
+  };
   editorHeader.setPointerCapture(event.pointerId);
 }
 
@@ -537,17 +583,20 @@ function bindEvents() {
   hatchButton.addEventListener('click', enterBunker);
   closePanelButton.addEventListener('click', closeInfoPanel);
   panelBackdrop.addEventListener('click', closeInfoPanel);
-  editLadderHotspot.addEventListener('click', handleDoorTripleClick);
+  editLadderHotspot.addEventListener('click', handleLadderTripleClick);
+
   sceneViewport.addEventListener('pointerdown', onViewportPointerDown);
   sceneViewport.addEventListener('pointermove', onViewportPointerMove);
   sceneViewport.addEventListener('pointerup', onViewportPointerUp);
   sceneViewport.addEventListener('pointercancel', onViewportPointerUp);
+
   editorCloseButton.addEventListener('click', () => toggleEditorMode(false));
   editorMinimiseButton.addEventListener('click', () => editorPanel.classList.toggle('is-minimised'));
   editorHeader.addEventListener('pointerdown', startEditorDrag);
   editorCopyButton.addEventListener('click', copyPlacement);
   editorDownloadButton.addEventListener('click', exportDataJs);
   editorResetButton.addEventListener('click', resetPlacement);
+
   window.addEventListener('pointermove', onWindowPointerMove);
   window.addEventListener('pointerup', onWindowPointerUp);
   window.addEventListener('resize', () => {
@@ -555,17 +604,27 @@ function bindEvents() {
     if (!appState.hasUserPanned) centerPan();
     showRotatePromptIfNeeded();
   });
-  window.addEventListener('orientationchange', () => setTimeout(showRotatePromptIfNeeded, 250));
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      appState.hasUserPanned = false;
+      updateStageSize();
+      centerPan();
+      showRotatePromptIfNeeded();
+    }, 250);
+  });
+
   computerCloseButton.addEventListener('click', closeComputerOverlay);
-  computerOverlay.addEventListener('click', (event) => { if (event.target === computerOverlay) closeComputerOverlay(); });
-  forceRotateButton?.addEventListener('click', forceRotate);
-  continuePortraitButton?.addEventListener('click', continuePortrait);
+  computerOverlay.addEventListener('click', (event) => {
+    if (event.target === computerOverlay) closeComputerOverlay();
+  });
+  forceRotateButton.addEventListener('click', forceRotate);
+  continuePortraitButton.addEventListener('click', continuePortrait);
+
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      if (appState.computerOpen) closeComputerOverlay();
-      else if (appState.editorMode) toggleEditorMode(false);
-      else if (appState.panelOpen) closeInfoPanel();
-    }
+    if (event.key !== 'Escape') return;
+    if (appState.computerOpen) closeComputerOverlay();
+    else if (appState.editorMode) toggleEditorMode(false);
+    else if (appState.panelOpen) closeInfoPanel();
   });
 }
 
@@ -576,7 +635,9 @@ function boot() {
   createDustParticles();
   bindEvents();
   preloadAssets().catch(() => unlockHatch());
-  setTimeout(() => { if (!appState.loaded) unlockHatch(); }, 6000);
+  setTimeout(() => {
+    if (!appState.loaded) unlockHatch();
+  }, 6000);
 }
 
 window.addEventListener('DOMContentLoaded', boot);

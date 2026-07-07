@@ -1,8 +1,3 @@
-/* Feisk Productions Vault data file.
-   IMPORTANT: Keep this file valid JavaScript.
-   Do not place raw line breaks inside quoted strings.
-   Hotspot values are percentages relative to assets/backgrounds/bunker-room-final.png.
-*/
 window.FEISK_ASSETS = {
   backgrounds: {
     bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
@@ -153,5 +148,4 @@ window.FEISK_ASSETS = {
     }
   ]
 };
-
 window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;
