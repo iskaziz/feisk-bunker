@@ -129,6 +129,13 @@ function applyHotspotStyle(el, hotspot) {
   el.style.top = `${hotspot.y}%`;
   el.style.width = `${hotspot.width}%`;
   el.style.height = `${hotspot.height}%`;
+
+  // Optional refined visual/click shapes. These keep the data.js file flexible:
+  // rect = normal box, ellipse = softer oval area, polygon = clipped custom shape.
+  el.classList.toggle('hotspot--ellipse', hotspot.shape === 'ellipse');
+  el.classList.toggle('hotspot--polygon', hotspot.shape === 'polygon');
+  el.style.borderRadius = hotspot.shape === 'ellipse' ? '999px' : `${hotspot.radius ?? 10}px`;
+  el.style.clipPath = hotspot.clipPath || '';
 }
 
 function createDustParticles() {
@@ -422,7 +429,7 @@ function updateEditorValues() {
     return;
   }
   editorSelected.textContent = hotspot.label || hotspot.id;
-  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}`;
+  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}\nshape: ${hotspot.shape || 'rect'}${hotspot.clipPath ? `\nclipPath: ${hotspot.clipPath}` : ''}`;
 }
 
 function stagePointToPercent(clientX, clientY) {

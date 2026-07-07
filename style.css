@@ -416,3 +416,22 @@ button { font: inherit; }
   .computer-icon__label { font-size: 0.66rem; }
   .computer-window { padding: 14px; }
 }
+
+/* Refined hotspot mode: tighter, item-shaped glows for the flat illustrated background. */
+.hotspot--ellipse {
+  border-radius: 999px;
+}
+
+.hotspot--polygon {
+  border-radius: 0;
+}
+
+.hotspot:hover,
+.hotspot:focus-visible,
+.hotspot.is-active {
+  filter: drop-shadow(0 0 8px rgba(255, 214, 102, 0.55)) drop-shadow(0 0 18px rgba(255, 214, 102, 0.28));
+}
+
+.hotspot.is-selected {
+  filter: drop-shadow(0 0 8px rgba(123, 240, 177, 0.65)) drop-shadow(0 0 18px rgba(123, 240, 177, 0.35));
+}
