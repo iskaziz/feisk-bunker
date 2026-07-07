@@ -1,18 +1,13 @@
-/*
-  Feisk Productions Vault data file.
-  The bunker now uses one flat background image plus invisible interactive hotspots.
-
-  Hotspot x/y/width/height values are percentages relative to the 16:9 background.
-  x and y are the top-left corner of the clickable area.
+/* Feisk Productions Vault data file.
+   The bunker uses one flat image plus invisible interactive hotspots.
+   x/y/width/height values are percentages relative to the background image.
 */
-
 window.FEISK_ASSETS = {
   backgrounds: {
     bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
     loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
     loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
   },
-
   hotspots: [
     {
       id: 'filing-cabinet',
@@ -104,6 +99,4 @@ window.FEISK_ASSETS = {
     }
   ]
 };
-
-// Backwards-compatible alias for older script versions.
 window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;

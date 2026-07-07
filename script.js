@@ -8,16 +8,16 @@ const sceneViewport = document.querySelector('#sceneViewport');
 const sceneStage = document.querySelector('#sceneStage');
 const bunkerBackground = document.querySelector('#bunkerBackground');
 const hotspotsLayer = document.querySelector('#hotspotsLayer');
-const infoPanel = document.querySelector('#infoPanel');
+const editDoorHotspot = document.querySelector('#editDoorHotspot');
 const panelBackdrop = document.querySelector('#panelBackdrop');
+const infoPanel = document.querySelector('#infoPanel');
 const closePanelButton = document.querySelector('#closePanelButton');
 const infoKicker = document.querySelector('#infoKicker');
 const infoTitle = document.querySelector('#infoTitle');
 const infoBody = document.querySelector('#infoBody');
-const mobileOrientationPrompt = document.querySelector('#mobileOrientationPrompt');
-const continuePortraitButton = document.querySelector('#continuePortraitButton');
-const editDoorHotspot = document.querySelector('#editDoorHotspot');
 const editorPanel = document.querySelector('#editorPanel');
+const editorHeader = document.querySelector('#editorHeader');
+const editorBody = document.querySelector('#editorBody');
 const editorStatus = document.querySelector('#editorStatus');
 const editorSelected = document.querySelector('#editorSelected');
 const editorValues = document.querySelector('#editorValues');
@@ -25,687 +25,423 @@ const editorCopyButton = document.querySelector('#editorCopyButton');
 const editorDownloadButton = document.querySelector('#editorDownloadButton');
 const editorResetButton = document.querySelector('#editorResetButton');
 const editorCloseButton = document.querySelector('#editorCloseButton');
-const editorMinimizeButton = document.querySelector('#editorMinimizeButton');
-const editorHeader = editorPanel?.querySelector('.editor-panel__header');
+const editorMinimiseButton = document.querySelector('#editorMinimiseButton');
 
-const DEFAULT_DATA = {
-  backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-final.png' },
-  hotspots: []
-};
-
-const ACTIVE_DATA = (() => {
-  const source = window.FEISK_ASSETS || DEFAULT_DATA;
-  const legacyProps = Array.isArray(source.props) ? source.props : [];
-  const hotspots = Array.isArray(source.hotspots) ? source.hotspots : legacyProps;
-
-  return {
-    backgrounds: source.backgrounds || DEFAULT_DATA.backgrounds,
-    hotspots: hotspots.map((hotspot) => ({ ...hotspot }))
-  };
-})();
-
-const STORAGE_KEY = 'feisk-bunker-hotspot-placement-v1';
-const originalHotspots = ACTIVE_DATA.hotspots.map((hotspot) => ({ ...hotspot }));
+const DEFAULT_ASSETS = { backgrounds: { bunkerRoom: 'assets/backgrounds/bunker-room-final.png' }, hotspots: [] };
+const ACTIVE_ASSETS = window.FEISK_ASSETS || DEFAULT_ASSETS;
+const hotspots = Array.isArray(ACTIVE_ASSETS.hotspots) ? ACTIVE_ASSETS.hotspots : [];
+const originalHotspots = hotspots.map((hotspot) => ({ ...hotspot }));
 
 const appState = {
-  isLoaded: false,
-  hasEntered: false,
-  activeHotspotId: null,
-  portraitBypass: false,
+  loaded: false,
+  entered: false,
+  panelOpen: false,
   editorMode: false,
-  selectedHotspotId: null,
+  selectedId: null,
   doorClickCount: 0,
   doorClickTimer: null,
-  dragState: null,
-  resizeState: null,
-  editorPanelDragState: null,
-  editorMinimized: false,
-  portraitHasBeenCentered: false,
-  portraitUserHasPanned: false,
-  portraitPanState: null,
-  suppressNextHotspotClick: false
+  panX: 0,
+  minPanX: 0,
+  maxPanX: 0,
+  hasUserPanned: false,
+  pointer: null,
+  hotspotDrag: null,
+  resizeDrag: null,
+  editorDrag: null
 };
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function round1(value) { return Math.round(value * 10) / 10; }
+function isPortraitMobile() { return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches; }
 
-function round1(value) {
-  return Math.round(value * 10) / 10;
-}
-
-function getHotspotById(id) {
-  return ACTIVE_DATA.hotspots.find((hotspot) => hotspot.id === id);
-}
-
-function unlockHatch(message = 'Click the hatch to enter.') {
-  appState.isLoaded = true;
-  app.classList.remove('app--loading');
-  app.classList.add('app--ready');
-  hatchButton.disabled = false;
-  loadingProgress.style.width = '100%';
-  loadingText.textContent = message;
-}
-
-function getAllImageSources() {
-  const backgroundSources = [
-    ACTIVE_DATA.backgrounds.bunkerRoom,
-    ACTIVE_DATA.backgrounds.loadingPortrait,
-    ACTIVE_DATA.backgrounds.loadingLandscape
-  ].filter(Boolean);
-
-  const loadingSources = window.FEISK_LOADING_SCREEN?.uiAssets || [];
-  return [...new Set([...backgroundSources, ...loadingSources])];
+function setLoadingBackgroundVariables() {
+  const backgrounds = ACTIVE_ASSETS.backgrounds || {};
+  document.documentElement.style.setProperty('--loading-bg-image', `url('${backgrounds.loadingLandscape || 'assets/backgrounds/loading-jungle-landscape.png'}')`);
+  document.documentElement.style.setProperty('--loading-bg-image-portrait', `url('${backgrounds.loadingPortrait || 'assets/backgrounds/loading-jungle-portrait.png'}')`);
 }
 
 function preloadImage(src) {
   return new Promise((resolve) => {
-    if (!src || typeof src !== 'string') {
-      resolve({ src, status: 'skipped' });
-      return;
-    }
-
-    const image = new Image();
-    let done = false;
-
-    const finish = (status) => {
-      if (done) return;
-      done = true;
-      window.clearTimeout(timer);
-      resolve({ src, status });
-    };
-
-    const timer = window.setTimeout(() => finish('timeout'), 5000);
-    image.onload = () => finish('loaded');
-    image.onerror = () => finish('missing');
-    image.src = src;
+    if (!src) return resolve();
+    const img = new Image();
+    const done = () => resolve();
+    img.onload = done;
+    img.onerror = done;
+    img.src = src;
   });
 }
 
+function getImageSources() {
+  const bg = ACTIVE_ASSETS.backgrounds || {};
+  const loading = window.FEISK_LOADING_SCREEN?.uiAssets || [];
+  return [bg.bunkerRoom, bg.loadingPortrait, bg.loadingLandscape, ...loading].filter(Boolean);
+}
+
 async function preloadAssets() {
-  const safetyTimer = window.setTimeout(() => {
-    if (!appState.isLoaded) unlockHatch('Click the hatch to enter.');
-  }, 8000);
-
-  try {
-    const sources = getAllImageSources();
-    let completed = 0;
-
-    if (!sources.length) {
-      unlockHatch();
-      return;
-    }
-
-    await Promise.all(sources.map(async (src) => {
-      const result = await preloadImage(src);
-      completed += 1;
-      const percent = Math.round((completed / sources.length) * 100);
-      loadingProgress.style.width = `${percent}%`;
-      loadingText.textContent = `Loading vault assets... ${percent}%`;
-      if (result.status !== 'loaded') {
-        console.warn(`[Feisk] Asset ${result.status}: ${src}`);
-      }
-      return result;
-    }));
-
-    unlockHatch();
-  } catch (error) {
-    console.error('[Feisk] Preload failed:', error);
-    unlockHatch('Click the hatch to enter.');
-  } finally {
-    window.clearTimeout(safetyTimer);
-  }
+  setLoadingBackgroundVariables();
+  const sources = [...new Set(getImageSources())];
+  let doneCount = 0;
+  if (!sources.length) return unlockHatch();
+  await Promise.all(sources.map(async (src) => {
+    await preloadImage(src);
+    doneCount += 1;
+    const pct = Math.round((doneCount / sources.length) * 100);
+    loadingProgress.style.width = `${pct}%`;
+    loadingText.textContent = `Loading vault assets... ${pct}%`;
+  }));
+  unlockHatch();
 }
 
-function loadSavedPlacement() {
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || 'null');
-    if (!Array.isArray(saved)) return;
-
-    saved.forEach((savedHotspot) => {
-      const target = getHotspotById(savedHotspot.id);
-      if (!target) return;
-      target.x = savedHotspot.x;
-      target.y = savedHotspot.y;
-      target.width = savedHotspot.width;
-      target.height = savedHotspot.height;
-    });
-  } catch (error) {
-    console.warn('[Feisk] Saved hotspot placement ignored:', error);
-  }
+function unlockHatch() {
+  appState.loaded = true;
+  app.classList.remove('app--loading');
+  app.classList.add('app--ready');
+  hatchButton.disabled = false;
+  loadingText.textContent = 'Click the hatch to enter.';
+  loadingProgress.style.width = '100%';
 }
 
-function savePlacement() {
-  const payload = ACTIVE_DATA.hotspots.map(({ id, x, y, width, height }) => ({ id, x, y, width, height }));
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+function renderBackground() {
+  bunkerBackground.src = ACTIVE_ASSETS.backgrounds?.bunkerRoom || DEFAULT_ASSETS.backgrounds.bunkerRoom;
+  bunkerBackground.addEventListener('load', () => {
+    updateStageSize();
+    if (appState.entered && !appState.hasUserPanned) centerPan();
+  });
 }
 
-function applyHotspotPlacement(button, hotspot) {
-  button.style.left = `${hotspot.x}%`;
-  button.style.top = `${hotspot.y}%`;
-  button.style.width = `${hotspot.width}%`;
-  button.style.height = `${hotspot.height}%`;
-}
+function getHotspotById(id) { return hotspots.find((hotspot) => hotspot.id === id); }
 
-function updateHotspotElement(id) {
-  const hotspot = getHotspotById(id);
-  const button = hotspotsLayer.querySelector(`[data-hotspot-id="${id}"]`);
-  if (!hotspot || !button) return;
-  applyHotspotPlacement(button, hotspot);
-}
-
-function renderSceneBackground() {
-  bunkerBackground.src = ACTIVE_DATA.backgrounds.bunkerRoom || DEFAULT_DATA.backgrounds.bunkerRoom;
+function applyHotspotStyle(el, hotspot) {
+  el.style.left = `${hotspot.x}%`;
+  el.style.top = `${hotspot.y}%`;
+  el.style.width = `${hotspot.width}%`;
+  el.style.height = `${hotspot.height}%`;
 }
 
 function renderHotspots() {
   hotspotsLayer.innerHTML = '';
-
-  ACTIVE_DATA.hotspots.forEach((hotspot) => {
+  hotspots.forEach((hotspot) => {
     const button = document.createElement('button');
-    button.className = 'scene-hotspot';
+    button.className = 'hotspot';
     button.type = 'button';
     button.dataset.hotspotId = hotspot.id;
-    button.setAttribute('aria-label', `Open ${hotspot.title || hotspot.label || hotspot.id} information`);
-    applyHotspotPlacement(button, hotspot);
-
-    const label = document.createElement('span');
-    label.className = 'scene-hotspot__label';
-    label.textContent = hotspot.label || hotspot.title || hotspot.id;
-
-    const moveHandle = document.createElement('span');
-    moveHandle.className = 'scene-hotspot__move-handle';
-    moveHandle.setAttribute('aria-hidden', 'true');
+    button.setAttribute('aria-label', hotspot.label || hotspot.title || hotspot.id);
+    applyHotspotStyle(button, hotspot);
 
     const resizeHandle = document.createElement('span');
-    resizeHandle.className = 'scene-hotspot__resize-handle';
+    resizeHandle.className = 'hotspot__resize-handle';
     resizeHandle.setAttribute('aria-hidden', 'true');
-
-    button.append(label, moveHandle, resizeHandle);
+    button.appendChild(resizeHandle);
 
     button.addEventListener('click', (event) => {
-      if (appState.suppressNextHotspotClick) {
-        event.preventDefault();
-        event.stopPropagation();
-        appState.suppressNextHotspotClick = false;
-        return;
-      }
-
       if (appState.editorMode) {
         event.preventDefault();
         event.stopPropagation();
         selectHotspot(hotspot.id);
         return;
       }
-
+      if (appState.pointer?.dragged) return;
       openInfoPanel(hotspot.id);
-      button.classList.add('is-active');
-      window.setTimeout(() => button.classList.remove('is-active'), 450);
     });
 
     button.addEventListener('pointerdown', (event) => {
       if (!appState.editorMode) return;
-      if (event.target.classList.contains('scene-hotspot__resize-handle')) return;
-      beginDrag(event, hotspot.id);
+      event.preventDefault();
+      event.stopPropagation();
+      selectHotspot(hotspot.id);
+      startHotspotDrag(event, hotspot.id);
     });
 
-    resizeHandle.addEventListener('pointerdown', (event) => beginResize(event, hotspot.id));
-    moveHandle.addEventListener('pointerdown', (event) => beginDrag(event, hotspot.id));
+    resizeHandle.addEventListener('pointerdown', (event) => {
+      if (!appState.editorMode) return;
+      event.preventDefault();
+      event.stopPropagation();
+      selectHotspot(hotspot.id);
+      startResizeDrag(event, hotspot.id);
+    });
 
     hotspotsLayer.appendChild(button);
   });
 }
 
-function openInfoPanel(id) {
-  const hotspot = getHotspotById(id);
-  if (!hotspot) return;
-
-  appState.activeHotspotId = id;
-  infoKicker.textContent = hotspot.kicker || 'Archive Object';
-  infoTitle.textContent = hotspot.title || hotspot.label || id;
-  infoBody.textContent = hotspot.body || '';
-
-  infoPanel.classList.add('is-open');
-  infoPanel.setAttribute('aria-hidden', 'false');
-  panelBackdrop.hidden = false;
-  window.setTimeout(() => closePanelButton.focus({ preventScroll: true }), 20);
+function updateStageSize() {
+  if (!sceneStage || !bunkerBackground) return;
+  if (isPortraitMobile()) {
+    const ratio = bunkerBackground.naturalWidth && bunkerBackground.naturalHeight ? bunkerBackground.naturalWidth / bunkerBackground.naturalHeight : 16 / 9;
+    const stageHeight = window.innerHeight;
+    sceneStage.style.width = `${Math.ceil(stageHeight * ratio)}px`;
+    sceneStage.style.height = `${stageHeight}px`;
+  } else {
+    sceneStage.style.width = '';
+    sceneStage.style.height = '';
+  }
+  requestAnimationFrame(updatePanBounds);
 }
 
-function closeInfoPanel() {
-  appState.activeHotspotId = null;
-  infoPanel.classList.remove('is-open');
-  infoPanel.setAttribute('aria-hidden', 'true');
-  panelBackdrop.hidden = true;
+function updatePanBounds() {
+  if (!isPortraitMobile()) {
+    appState.panX = 0;
+    sceneStage.style.transform = '';
+    return;
+  }
+  const viewportWidth = sceneViewport.clientWidth;
+  const stageWidth = sceneStage.getBoundingClientRect().width;
+  appState.maxPanX = 0;
+  appState.minPanX = Math.min(0, viewportWidth - stageWidth);
+  appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
+  applyPan();
+}
+
+function applyPan() {
+  if (!isPortraitMobile()) return;
+  sceneStage.style.transform = `translate3d(${appState.panX}px, -50%, 0)`;
+}
+
+function centerPan() {
+  updateStageSize();
+  if (!isPortraitMobile()) return;
+  const stageWidth = sceneStage.getBoundingClientRect().width;
+  const viewportWidth = sceneViewport.clientWidth;
+  appState.panX = Math.round((viewportWidth - stageWidth) / 2);
+  appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
+  applyPan();
+}
+
+function onViewportPointerDown(event) {
+  if (!isPortraitMobile() || appState.editorMode || appState.panelOpen) return;
+  appState.pointer = {
+    id: event.pointerId,
+    startX: event.clientX,
+    startPanX: appState.panX,
+    dragged: false
+  };
+  sceneViewport.classList.add('is-dragging');
+  sceneViewport.setPointerCapture(event.pointerId);
+}
+
+function onViewportPointerMove(event) {
+  if (!appState.pointer || event.pointerId !== appState.pointer.id) return;
+  const delta = event.clientX - appState.pointer.startX;
+  if (Math.abs(delta) > 4) appState.pointer.dragged = true;
+  appState.panX = clamp(appState.pointer.startPanX + delta, appState.minPanX, appState.maxPanX);
+  appState.hasUserPanned = true;
+  applyPan();
+}
+
+function onViewportPointerUp(event) {
+  if (!appState.pointer || event.pointerId !== appState.pointer.id) return;
+  sceneViewport.classList.remove('is-dragging');
+  sceneViewport.releasePointerCapture(event.pointerId);
+  setTimeout(() => { appState.pointer = null; }, 0);
 }
 
 function enterBunker() {
-  if (!appState.isLoaded) return;
-
-  appState.hasEntered = true;
-  app.classList.add('app--entering');
+  if (!appState.loaded || appState.entered) return;
+  appState.entered = true;
   hatchButton.disabled = true;
-  loadingText.textContent = 'Opening hatch...';
-
-  window.setTimeout(() => {
-    app.classList.remove('app--loading', 'app--ready', 'app--entering');
-    app.classList.add('app--inside');
+  app.classList.add('app--entering');
+  loadingText.textContent = 'Vault hatch opening...';
+  setTimeout(() => {
     loadingScreen.setAttribute('aria-hidden', 'true');
-    bunkerScene.setAttribute('aria-hidden', 'false');
-    checkMobileOrientation();
-  }, 950);
-}
-
-function checkMobileOrientation() {
-  const isPortraitMobile = window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
-  const shouldShow = isPortraitMobile && !appState.portraitBypass && appState.hasEntered;
-
-  mobileOrientationPrompt.classList.toggle('is-visible', shouldShow);
-  mobileOrientationPrompt.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-  sceneViewport.classList.toggle('scene-viewport--portrait-scroll', isPortraitMobile);
-
-  if (!isPortraitMobile) {
-    appState.portraitHasBeenCentered = false;
-    appState.portraitUserHasPanned = false;
-    return;
-  }
-
-  // Only auto-centre once when the bunker first appears in portrait.
-  // Mobile browsers can fire resize events while the address bar collapses;
-  // repeated centering makes it feel like the user cannot pan fully left.
-  if (appState.hasEntered && !appState.portraitHasBeenCentered && !appState.portraitUserHasPanned) {
-    window.requestAnimationFrame(centerPortraitSceneOnce);
-  }
-}
-
-function centerPortraitSceneOnce() {
-  if (!sceneViewport.classList.contains('scene-viewport--portrait-scroll')) return;
-  const maxScroll = sceneViewport.scrollWidth - sceneViewport.clientWidth;
-  if (maxScroll > 0) {
-    sceneViewport.scrollLeft = Math.round(maxScroll * 0.5);
-  }
-  appState.portraitHasBeenCentered = true;
-}
-
-function markPortraitUserPanned() {
-  if (sceneViewport.classList.contains('scene-viewport--portrait-scroll')) {
-    appState.portraitUserHasPanned = true;
-  }
-}
-
-function isPortraitPanMode() {
-  return sceneViewport.classList.contains('scene-viewport--portrait-scroll') && !appState.editorMode;
-}
-
-function beginPortraitPan(event) {
-  if (!isPortraitPanMode()) return;
-  if (event.button !== undefined && event.button !== 0) return;
-  if (event.target.closest('.info-panel, .mobile-orientation, .editor-panel')) return;
-
-  appState.portraitUserHasPanned = true;
-  appState.portraitPanState = {
-    pointerId: event.pointerId,
-    startClientX: event.clientX,
-    startClientY: event.clientY,
-    startScrollLeft: sceneViewport.scrollLeft,
-    hasMoved: false
-  };
-
-  sceneViewport.classList.add('is-portrait-panning');
-  sceneViewport.setPointerCapture?.(event.pointerId);
-}
-
-function movePortraitPan(event) {
-  const pan = appState.portraitPanState;
-  if (!pan || pan.pointerId !== event.pointerId) return false;
-
-  const dx = event.clientX - pan.startClientX;
-  const dy = event.clientY - pan.startClientY;
-
-  if (!pan.hasMoved && Math.abs(dx) < 4 && Math.abs(dy) < 8) return true;
-
-  pan.hasMoved = true;
-  appState.suppressNextHotspotClick = true;
-  event.preventDefault();
-
-  const maxScroll = Math.max(0, sceneViewport.scrollWidth - sceneViewport.clientWidth);
-  const nextScroll = clamp(pan.startScrollLeft - dx, 0, maxScroll);
-  sceneViewport.scrollLeft = nextScroll;
-  return true;
-}
-
-function endPortraitPan(event) {
-  const pan = appState.portraitPanState;
-  if (!pan || (event?.pointerId !== undefined && pan.pointerId !== event.pointerId)) return;
-
-  sceneViewport.classList.remove('is-portrait-panning');
-  appState.portraitPanState = null;
-
-  if (pan.hasMoved) {
-    window.setTimeout(() => {
-      appState.suppressNextHotspotClick = false;
-    }, 120);
-  }
-}
-
-function handleEditorDoorClick() {
-  if (!appState.hasEntered) return;
-
-  appState.doorClickCount += 1;
-  window.clearTimeout(appState.doorClickTimer);
-
-  appState.doorClickTimer = window.setTimeout(() => {
-    appState.doorClickCount = 0;
+    bunkerScene.classList.add('bunker-scene--active');
+    app.classList.add('app--inside');
+    updateStageSize();
+    centerPan();
   }, 900);
+}
 
+function openInfoPanel(id) {
+  const hotspot = getHotspotById(id);
+  if (!hotspot) return;
+  appState.panelOpen = true;
+  infoKicker.textContent = hotspot.kicker || 'Archive';
+  infoTitle.textContent = hotspot.title || hotspot.label || id;
+  infoBody.textContent = hotspot.body || '';
+  panelBackdrop.hidden = false;
+  infoPanel.setAttribute('aria-hidden', 'false');
+  app.classList.add('app--panel-open');
+  document.querySelectorAll('.hotspot').forEach((el) => el.classList.toggle('is-active', el.dataset.hotspotId === id));
+}
+
+function closeInfoPanel() {
+  appState.panelOpen = false;
+  infoPanel.setAttribute('aria-hidden', 'true');
+  app.classList.remove('app--panel-open');
+  document.querySelectorAll('.hotspot').forEach((el) => el.classList.remove('is-active'));
+  setTimeout(() => { if (!appState.panelOpen) panelBackdrop.hidden = true; }, 220);
+}
+
+function handleDoorTripleClick() {
+  if (!appState.entered) return;
+  appState.doorClickCount += 1;
+  editDoorHotspot.classList.add('editor-door-hotspot--ping');
+  setTimeout(() => editDoorHotspot.classList.remove('editor-door-hotspot--ping'), 180);
+  clearTimeout(appState.doorClickTimer);
   if (appState.doorClickCount >= 3) {
     appState.doorClickCount = 0;
-    toggleEditor(!appState.editorMode);
+    toggleEditorMode();
+    return;
   }
+  appState.doorClickTimer = setTimeout(() => { appState.doorClickCount = 0; }, 900);
 }
 
-function toggleEditor(enabled) {
-  appState.editorMode = enabled;
-  app.classList.toggle('app--editor', enabled);
-  editorPanel.hidden = !enabled;
-
-  if (enabled) {
-    editorStatus.textContent = 'Editor enabled. Select a hotspot to move or resize it.';
-    if (!appState.selectedHotspotId && ACTIVE_DATA.hotspots[0]) selectHotspot(ACTIVE_DATA.hotspots[0].id);
-  } else {
-    appState.selectedHotspotId = null;
-    document.querySelectorAll('.scene-hotspot.is-selected').forEach((el) => el.classList.remove('is-selected'));
-    editorSelected.textContent = 'No hotspot selected';
-    editorValues.textContent = '';
+function toggleEditorMode(force) {
+  appState.editorMode = typeof force === 'boolean' ? force : !appState.editorMode;
+  app.classList.toggle('app--editor-mode', appState.editorMode);
+  editorPanel.hidden = !appState.editorMode;
+  if (appState.editorMode) {
+    closeInfoPanel();
+    selectHotspot(appState.selectedId || hotspots[0]?.id);
+    updateEditorStatus('Editor mode enabled. Drag hotspots or resize with the gold handle.');
   }
 }
 
 function selectHotspot(id) {
-  const hotspot = getHotspotById(id);
-  if (!hotspot) return;
-
-  appState.selectedHotspotId = id;
-  document.querySelectorAll('.scene-hotspot.is-selected').forEach((el) => el.classList.remove('is-selected'));
-  hotspotsLayer.querySelector(`[data-hotspot-id="${id}"]`)?.classList.add('is-selected');
-  editorSelected.textContent = hotspot.label || hotspot.title || id;
+  appState.selectedId = id;
+  document.querySelectorAll('.hotspot').forEach((el) => el.classList.toggle('is-selected', el.dataset.hotspotId === id));
   updateEditorValues();
 }
 
+function updateEditorStatus(text) { editorStatus.textContent = text; }
+
 function updateEditorValues() {
-  const hotspot = getHotspotById(appState.selectedHotspotId);
+  const hotspot = getHotspotById(appState.selectedId);
   if (!hotspot) {
+    editorSelected.textContent = 'No hotspot selected';
     editorValues.textContent = '';
     return;
   }
-
-  editorValues.textContent = `id: ${hotspot.id}\nx: ${round1(hotspot.x)}\ny: ${round1(hotspot.y)}\nwidth: ${round1(hotspot.width)}\nheight: ${round1(hotspot.height)}`;
+  editorSelected.textContent = hotspot.label || hotspot.id;
+  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}`;
 }
 
-function getStagePercentFromPointer(event) {
+function stagePointToPercent(clientX, clientY) {
   const rect = sceneStage.getBoundingClientRect();
   return {
-    x: ((event.clientX - rect.left) / rect.width) * 100,
-    y: ((event.clientY - rect.top) / rect.height) * 100
+    x: clamp(((clientX - rect.left) / rect.width) * 100, 0, 100),
+    y: clamp(((clientY - rect.top) / rect.height) * 100, 0, 100)
   };
 }
 
-function beginDrag(event, id) {
-  if (!appState.editorMode) return;
-  event.preventDefault();
-  event.stopPropagation();
-
+function startHotspotDrag(event, id) {
   const hotspot = getHotspotById(id);
-  if (!hotspot) return;
-
-  selectHotspot(id);
-  const pointer = getStagePercentFromPointer(event);
-  appState.dragState = {
-    id,
-    pointerId: event.pointerId,
-    startPointerX: pointer.x,
-    startPointerY: pointer.y,
-    startX: hotspot.x,
-    startY: hotspot.y
-  };
-
-  event.currentTarget.setPointerCapture?.(event.pointerId);
+  const start = stagePointToPercent(event.clientX, event.clientY);
+  appState.hotspotDrag = { id, pointerId: event.pointerId, startX: start.x, startY: start.y, originalX: hotspot.x, originalY: hotspot.y };
+  event.currentTarget.setPointerCapture(event.pointerId);
 }
 
-function beginResize(event, id) {
-  if (!appState.editorMode) return;
-  event.preventDefault();
-  event.stopPropagation();
-
+function startResizeDrag(event, id) {
   const hotspot = getHotspotById(id);
-  if (!hotspot) return;
-
-  selectHotspot(id);
-  const pointer = getStagePercentFromPointer(event);
-  appState.resizeState = {
-    id,
-    pointerId: event.pointerId,
-    startPointerX: pointer.x,
-    startPointerY: pointer.y,
-    startWidth: hotspot.width,
-    startHeight: hotspot.height
-  };
-
-  event.currentTarget.setPointerCapture?.(event.pointerId);
+  const start = stagePointToPercent(event.clientX, event.clientY);
+  appState.resizeDrag = { id, pointerId: event.pointerId, startX: start.x, startY: start.y, originalWidth: hotspot.width, originalHeight: hotspot.height };
+  event.currentTarget.parentElement.setPointerCapture(event.pointerId);
 }
 
-function beginEditorPanelDrag(event) {
-  if (!appState.editorMode || !editorPanel || event.target.closest('button')) return;
-  event.preventDefault();
-
-  const rect = editorPanel.getBoundingClientRect();
-  appState.editorPanelDragState = {
-    pointerId: event.pointerId,
-    startClientX: event.clientX,
-    startClientY: event.clientY,
-    startLeft: rect.left,
-    startTop: rect.top,
-    width: rect.width,
-    height: rect.height
-  };
-
-  editorPanel.classList.add('is-dragging');
-  editorPanel.style.left = `${rect.left}px`;
-  editorPanel.style.top = `${rect.top}px`;
-  editorPanel.style.right = 'auto';
-  editorPanel.style.bottom = 'auto';
-  editorHeader?.setPointerCapture?.(event.pointerId);
-}
-
-function moveEditorPanel(event) {
-  const drag = appState.editorPanelDragState;
-  if (!drag) return;
-
-  const margin = 8;
-  const nextLeft = clamp(drag.startLeft + event.clientX - drag.startClientX, margin, window.innerWidth - drag.width - margin);
-  const nextTop = clamp(drag.startTop + event.clientY - drag.startClientY, margin, window.innerHeight - drag.height - margin);
-
-  editorPanel.style.left = `${Math.round(nextLeft)}px`;
-  editorPanel.style.top = `${Math.round(nextTop)}px`;
-}
-
-function handlePointerMove(event) {
-  if (movePortraitPan(event)) return;
-
-  if (appState.editorPanelDragState) {
-    moveEditorPanel(event);
-    return;
-  }
-
-  if (appState.dragState) {
-    const hotspot = getHotspotById(appState.dragState.id);
-    if (!hotspot) return;
-
-    const pointer = getStagePercentFromPointer(event);
-    const dx = pointer.x - appState.dragState.startPointerX;
-    const dy = pointer.y - appState.dragState.startPointerY;
-
-    hotspot.x = round1(clamp(appState.dragState.startX + dx, 0, 100 - hotspot.width));
-    hotspot.y = round1(clamp(appState.dragState.startY + dy, 0, 100 - hotspot.height));
-
-    updateHotspotElement(hotspot.id);
+function onWindowPointerMove(event) {
+  if (appState.hotspotDrag && event.pointerId === appState.hotspotDrag.pointerId) {
+    const drag = appState.hotspotDrag;
+    const hotspot = getHotspotById(drag.id);
+    const point = stagePointToPercent(event.clientX, event.clientY);
+    hotspot.x = round1(clamp(drag.originalX + point.x - drag.startX, 0, 100 - hotspot.width));
+    hotspot.y = round1(clamp(drag.originalY + point.y - drag.startY, 0, 100 - hotspot.height));
+    applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
     updateEditorValues();
-    savePlacement();
   }
-
-  if (appState.resizeState) {
-    const hotspot = getHotspotById(appState.resizeState.id);
-    if (!hotspot) return;
-
-    const pointer = getStagePercentFromPointer(event);
-    const dx = pointer.x - appState.resizeState.startPointerX;
-    const dy = pointer.y - appState.resizeState.startPointerY;
-
-    hotspot.width = round1(clamp(appState.resizeState.startWidth + dx, 2, 100 - hotspot.x));
-    hotspot.height = round1(clamp(appState.resizeState.startHeight + dy, 2, 100 - hotspot.y));
-
-    updateHotspotElement(hotspot.id);
+  if (appState.resizeDrag && event.pointerId === appState.resizeDrag.pointerId) {
+    const drag = appState.resizeDrag;
+    const hotspot = getHotspotById(drag.id);
+    const point = stagePointToPercent(event.clientX, event.clientY);
+    hotspot.width = round1(clamp(drag.originalWidth + point.x - drag.startX, 2, 100 - hotspot.x));
+    hotspot.height = round1(clamp(drag.originalHeight + point.y - drag.startY, 2, 100 - hotspot.y));
+    applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
     updateEditorValues();
-    savePlacement();
+  }
+  if (appState.editorDrag && event.pointerId === appState.editorDrag.pointerId) {
+    const drag = appState.editorDrag;
+    const x = clamp(drag.startLeft + event.clientX - drag.startX, 0, window.innerWidth - editorPanel.offsetWidth);
+    const y = clamp(drag.startTop + event.clientY - drag.startY, 0, window.innerHeight - 42);
+    editorPanel.style.left = `${x}px`;
+    editorPanel.style.top = `${y}px`;
   }
 }
 
-function handlePointerUp(event) {
-  endPortraitPan(event);
-  appState.dragState = null;
-  appState.resizeState = null;
-  appState.editorPanelDragState = null;
-  editorPanel?.classList.remove('is-dragging');
+function onWindowPointerUp(event) {
+  if (appState.hotspotDrag?.pointerId === event.pointerId) appState.hotspotDrag = null;
+  if (appState.resizeDrag?.pointerId === event.pointerId) appState.resizeDrag = null;
+  if (appState.editorDrag?.pointerId === event.pointerId) appState.editorDrag = null;
 }
 
-function nudgeSelectedHotspot(event) {
-  if (!appState.editorMode || !appState.selectedHotspotId) return;
-  const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
-  if (!keys.includes(event.key)) return;
-
-  const hotspot = getHotspotById(appState.selectedHotspotId);
-  if (!hotspot) return;
-
-  event.preventDefault();
-  const amount = event.shiftKey ? 1 : 0.2;
-  if (event.key === 'ArrowLeft') hotspot.x = round1(clamp(hotspot.x - amount, 0, 100 - hotspot.width));
-  if (event.key === 'ArrowRight') hotspot.x = round1(clamp(hotspot.x + amount, 0, 100 - hotspot.width));
-  if (event.key === 'ArrowUp') hotspot.y = round1(clamp(hotspot.y - amount, 0, 100 - hotspot.height));
-  if (event.key === 'ArrowDown') hotspot.y = round1(clamp(hotspot.y + amount, 0, 100 - hotspot.height));
-
-  updateHotspotElement(hotspot.id);
-  updateEditorValues();
-  savePlacement();
-}
-
-function buildExportedDataJs() {
-  const data = {
-    backgrounds: ACTIVE_DATA.backgrounds,
-    hotspots: ACTIVE_DATA.hotspots.map((hotspot) => ({
-      id: hotspot.id,
-      label: hotspot.label,
-      title: hotspot.title,
-      kicker: hotspot.kicker,
-      body: hotspot.body,
-      x: round1(hotspot.x),
-      y: round1(hotspot.y),
-      width: round1(hotspot.width),
-      height: round1(hotspot.height)
-    }))
-  };
-
-  return `/*\n  Feisk Productions Vault data file.\n  Hotspot x/y/width/height values are percentages relative to the 16:9 background.\n*/\n\nwindow.FEISK_ASSETS = ${JSON.stringify(data, null, 2)};\nwindow.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;\n`;
-}
-
-async function copyPlacement() {
-  const text = ACTIVE_DATA.hotspots.map((hotspot) => (
-    `${hotspot.id}: x ${round1(hotspot.x)}, y ${round1(hotspot.y)}, width ${round1(hotspot.width)}, height ${round1(hotspot.height)}`
-  )).join('\n');
-
-  try {
-    await navigator.clipboard.writeText(text);
-    editorStatus.textContent = 'Hotspot placement copied.';
-  } catch {
-    editorStatus.textContent = 'Copy failed. Use Download data.js instead.';
-  }
-}
-
-function downloadDataFile() {
-  const blob = new Blob([buildExportedDataJs()], { type: 'text/javascript;charset=utf-8' });
+function exportDataJs() {
+  const content = `/* Feisk Productions Vault data file. Exported from the hotspot editor. */\nwindow.FEISK_ASSETS = ${JSON.stringify(ACTIVE_ASSETS, null, 2)};\nwindow.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;\n`;
+  const blob = new Blob([content], { type: 'text/javascript' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'data.js';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.js';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   URL.revokeObjectURL(url);
-  editorStatus.textContent = 'Downloaded data.js. Replace the repo file with it.';
+  updateEditorStatus('Downloaded data.js. Replace the file in your repo with this version.');
+}
+
+function copyPlacement() {
+  const hotspot = getHotspotById(appState.selectedId);
+  if (!hotspot) return;
+  const text = `x: ${hotspot.x}, y: ${hotspot.y}, width: ${hotspot.width}, height: ${hotspot.height}`;
+  navigator.clipboard?.writeText(text);
+  updateEditorStatus('Placement copied.');
 }
 
 function resetPlacement() {
-  ACTIVE_DATA.hotspots.forEach((hotspot) => {
-    const original = originalHotspots.find((item) => item.id === hotspot.id);
-    if (!original) return;
-    hotspot.x = original.x;
-    hotspot.y = original.y;
-    hotspot.width = original.width;
-    hotspot.height = original.height;
-    updateHotspotElement(hotspot.id);
-  });
-
-  window.localStorage.removeItem(STORAGE_KEY);
-  updateEditorValues();
-  editorStatus.textContent = 'Hotspot placement reset.';
-}
-
-function toggleEditorMinimized() {
-  appState.editorMinimized = !appState.editorMinimized;
-  editorPanel.classList.toggle('is-minimized', appState.editorMinimized);
-  editorMinimizeButton.textContent = appState.editorMinimized ? '▢' : '–';
-  editorMinimizeButton.setAttribute('aria-label', appState.editorMinimized ? 'Expand editor' : 'Minimize editor');
-}
-
-function init() {
-  renderSceneBackground();
-  loadSavedPlacement();
+  hotspots.splice(0, hotspots.length, ...originalHotspots.map((h) => ({ ...h })));
   renderHotspots();
-  preloadAssets();
-  checkMobileOrientation();
+  selectHotspot(hotspots[0]?.id);
+  updateEditorStatus('Placement reset.');
+}
 
+function startEditorDrag(event) {
+  if (event.target.closest('button')) return;
+  const rect = editorPanel.getBoundingClientRect();
+  appState.editorDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startLeft: rect.left, startTop: rect.top };
+  editorHeader.setPointerCapture(event.pointerId);
+}
+
+function bindEvents() {
   hatchButton.addEventListener('click', enterBunker);
   closePanelButton.addEventListener('click', closeInfoPanel);
   panelBackdrop.addEventListener('click', closeInfoPanel);
-  continuePortraitButton.addEventListener('click', () => {
-    appState.portraitBypass = true;
-    checkMobileOrientation();
-    appState.portraitHasBeenCentered = false;
-    window.setTimeout(centerPortraitSceneOnce, 50);
-  });
-
-  editDoorHotspot.addEventListener('click', handleEditorDoorClick);
-  editorCloseButton.addEventListener('click', () => toggleEditor(false));
-  editorMinimizeButton.addEventListener('click', toggleEditorMinimized);
-  editorHeader?.addEventListener('pointerdown', beginEditorPanelDrag);
+  editDoorHotspot.addEventListener('click', handleDoorTripleClick);
+  sceneViewport.addEventListener('pointerdown', onViewportPointerDown);
+  sceneViewport.addEventListener('pointermove', onViewportPointerMove);
+  sceneViewport.addEventListener('pointerup', onViewportPointerUp);
+  sceneViewport.addEventListener('pointercancel', onViewportPointerUp);
+  editorCloseButton.addEventListener('click', () => toggleEditorMode(false));
+  editorMinimiseButton.addEventListener('click', () => editorPanel.classList.toggle('is-minimised'));
+  editorHeader.addEventListener('pointerdown', startEditorDrag);
   editorCopyButton.addEventListener('click', copyPlacement);
-  editorDownloadButton.addEventListener('click', downloadDataFile);
+  editorDownloadButton.addEventListener('click', exportDataJs);
   editorResetButton.addEventListener('click', resetPlacement);
-
-  window.addEventListener('pointermove', handlePointerMove);
-  window.addEventListener('pointerup', handlePointerUp);
-  sceneViewport.addEventListener('scroll', markPortraitUserPanned, { passive: true });
-  sceneViewport.addEventListener('pointerdown', beginPortraitPan);
-  sceneViewport.addEventListener('pointercancel', endPortraitPan);
-  sceneViewport.addEventListener('touchstart', markPortraitUserPanned, { passive: true });
-  window.addEventListener('resize', checkMobileOrientation);
-  window.addEventListener('orientationchange', () => window.setTimeout(checkMobileOrientation, 250));
+  window.addEventListener('pointermove', onWindowPointerMove);
+  window.addEventListener('pointerup', onWindowPointerUp);
+  window.addEventListener('resize', () => {
+    updateStageSize();
+    if (!appState.hasUserPanned) centerPan();
+  });
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeInfoPanel();
-    nudgeSelectedHotspot(event);
+    if (event.key === 'Escape') {
+      if (appState.editorMode) toggleEditorMode(false);
+      else if (appState.panelOpen) closeInfoPanel();
+    }
   });
 }
 
-window.addEventListener('error', (event) => {
-  console.error('[Feisk runtime error]', event.message, event.error || event);
-  if (!appState.hasEntered) unlockHatch('Boot warning. Click the hatch to continue.');
-});
+function boot() {
+  renderBackground();
+  renderHotspots();
+  bindEvents();
+  preloadAssets().catch(() => unlockHatch());
+  setTimeout(() => { if (!appState.loaded) unlockHatch(); }, 6000);
+}
 
-init();
+window.addEventListener('DOMContentLoaded', boot);
