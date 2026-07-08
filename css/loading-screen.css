@@ -109,7 +109,7 @@
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -50%) scale(1.025); }
 }
-@media (max-width: 820px) and (orientation: portrait) {
+@media (max-width: 1024px) and (orientation: portrait) {
   :root {
     --loading-bg-image: var(--loading-bg-image-portrait);
     --hatch-left: 50%;
