@@ -1,7 +1,8 @@
 FEISK PRODUCTIONS BUNKER PROTOTYPE
 =================================
 
-This build integrates the image-based loading screen assets and keeps the bunker scene/editor data-driven.
+An early-2000s Flash-style / point-and-click interactive bunker built
+in vanilla HTML, CSS and JavaScript. No frameworks, no build step.
 
 MAIN FILES
 ----------
@@ -10,13 +11,11 @@ style.css
 prop-placement.css
 script.js
 data.js
-data.layer-b-props.js
 
-NEW LOADING SCREEN FILES
-------------------------
+LOADING SCREEN FILES
+---------------------
 css/loading-screen.css
 js/loading-screen.js
-snippets/loading-screen-snippet.html
 
 REQUIRED ASSET PATHS
 --------------------
@@ -24,48 +23,55 @@ assets/ui/feisk-sign.png
 assets/ui/hatch-closed.png
 assets/ui/hatch-open.png
 
-assets/backgrounds/bunker-room-background-reference.png
-assets/backgrounds/bunker-with-props-preview.png
+assets/backgrounds/bunker-room-final.png
+assets/backgrounds/loading-jungle-portrait.png
+assets/backgrounds/loading-jungle-landscape.png
 
-assets/props/filing-cabinet.png
-assets/props/wall-safe.png
-assets/props/white-fluffy-rug.png
-assets/props/wall-mounted-lcd-monitors.png
-assets/props/old-desktop-computer.png
-assets/props/swivel-desk-chair.png
-assets/props/rotary-telephone.png
-assets/props/bookshelf.png
+assets/props/ contains individual prop reference images
+(filing-cabinet.png, wall-safe.png, wall-mounted-lcd-monitors.png,
+old-desktop-computer.png, swivel-desk-chair.png, rotary-telephone.png,
+bookshelf.png, white-fluffy-rug.png). These are reference/source art;
+the live scene currently uses props baked into the single
+bunker-room-final.png background, with invisible hotspot buttons
+(configured in data.js) layered on top for click areas.
 
 HOW IT WORKS
 ------------
-1. index.html now uses the image-based loading screen markup from snippets/loading-screen-snippet.html.
-2. css/loading-screen.css positions the Feisk sign, closed hatch, and open hatch.
-3. js/loading-screen.js declares the UI assets so script.js preloads them before allowing entry.
-4. script.js still controls preload progress, entry transition, bunker scene, info panels, and the hidden editor.
-5. data.js remains the main source of truth for prop placement and panel content.
+1. index.html loads css/loading-screen.css, style.css and
+   prop-placement.css, then js/loading-screen.js, data.js and
+   script.js in that order.
+2. js/loading-screen.js declares the UI assets (sign + hatch images)
+   that get preloaded before the hatch is clickable.
+3. data.js is the single source of truth for background paths,
+   hotspot placement/copy, and the computer-terminal icon content.
+4. script.js preloads assets, controls the hatch/entry transition,
+   renders hotspots from data.js, drives the info panel and computer
+   overlay, and contains a hidden placement editor.
 
 HIDDEN EDITOR
 -------------
-After entering the bunker, triple-click the far-right door area to enable the placement editor.
+After entering the bunker, triple-click the ladder area (left side of
+the scene, roughly 12-20% across) to toggle the placement editor.
 
 Editor controls:
-- Click a prop to select it.
-- Drag the prop or green top-left handle to move it.
+- Click a hotspot to select it.
+- Drag the hotspot to move it.
 - Drag the gold bottom-right handle to resize it.
-- Arrow keys nudge selected prop.
-- Shift + arrow keys nudge selected prop faster.
-- Download data.js exports the current coordinates into a replacement data.js file.
+- "Download data.js" exports the current coordinates as a
+  replacement data.js file - copy the hotspot values back into your
+  real data.js and commit it.
 
-MOBILE
-------
-Portrait mobile shows a rotate-to-landscape prompt first. Users can continue in portrait, but landscape is recommended because the bunker is designed as a 16:9 point-and-click scene.
+MOBILE / TABLET
+----------------
+Portrait screens up to 1024px wide (phones and most tablets in
+portrait) get a horizontally pannable scene and a rotate-to-landscape
+prompt, since the bunker is designed as a 16:9 point-and-click scene.
+Landscape orientation (including desktop) fills the viewport width
+directly with no panning needed.
 
-UPLOAD NOTE
------------
-Upload the contents of this folder into the root of your GitHub Pages repository. Keep the asset filenames exactly as listed above.
-
-
-LIVE FIX NOTES:
-- data.js and data.layer-b-props.js now attach assets to window.FEISK_ASSETS, avoiding const redeclaration errors.
-- script.js now uses a safe ACTIVE_FEISK_ASSETS fallback, so the loading screen will not remain stuck if one data filename is missing.
-- Upload files to the repository root, not inside a nested folder.
+DEPLOYMENT NOTE
+----------------
+Upload the contents of this folder into the root of your GitHub Pages
+repository (or serve it as-is via Pages from the repo root). Keep all
+asset filenames and folder paths exactly as listed above - paths are
+case-sensitive on GitHub Pages.

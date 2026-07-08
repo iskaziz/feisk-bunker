@@ -80,7 +80,7 @@ function round1(value) {
 }
 
 function isPortraitMobile() {
-  return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
+  return window.matchMedia('(max-width: 1024px) and (orientation: portrait)').matches;
 }
 
 function setLoadingBackgroundVariables() {
@@ -158,7 +158,7 @@ function applyHotspotStyle(el, hotspot) {
 
 function createDustParticles() {
   if (!dustLayer || dustLayer.childElementCount) return;
-  const count = window.matchMedia('(max-width: 820px)').matches ? 28 : 46;
+  const count = window.matchMedia('(max-width: 1024px)').matches ? 28 : 46;
   for (let i = 0; i < count; i += 1) {
     const particle = document.createElement('span');
     particle.className = 'dust-particle';
