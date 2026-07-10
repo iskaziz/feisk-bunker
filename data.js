@@ -4,6 +4,7 @@ window.FEISK_ASSETS = {
     loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
     loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
   },
+
   hotspots: [
     {
       id: 'filing-cabinet',
@@ -88,10 +89,22 @@ window.FEISK_ASSETS = {
       title: 'White Fluffy Rug',
       kicker: 'Festival Clue',
       body: 'A strange soft patch in an otherwise hard concrete room.\n\nHidden beneath it: a reminder that Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.',
-      x: 10.2,
-      y: 76.2,
-      width: 61.5,
-      height: 20.5
+      x: 18.0,
+      y: 76.0,
+      width: 57.0,
+      height: 16.8
+    },
+    {
+      id: 'tikus-book',
+      label: 'Tikus Book',
+      title: 'Tikus',
+      kicker: 'Hidden Project File',
+      body: 'A medieval-looking book marked Tikus sits partly off-screen on the foreground shelf.\n\nThis can be used as a hidden link into the Tikus archive, a secret project page, or an easter egg connected to the wider Feisk bunker.',
+      x: 0.4,
+      y: 78.4,
+      width: 22.6,
+      height: 21.3,
+      radius: 14
     },
     {
       id: 'vault-door',
@@ -105,6 +118,7 @@ window.FEISK_ASSETS = {
       height: 51.2
     }
   ],
+
   computerIcons: [
     {
       id: 'about',
@@ -148,4 +162,5 @@ window.FEISK_ASSETS = {
     }
   ]
 };
+
 window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;
