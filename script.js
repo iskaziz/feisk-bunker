@@ -62,6 +62,7 @@ const appState = {
   minPanX: 0,
   maxPanX: 0,
   hasUserPanned: false,
+  didInitialPortraitCenter: false,
   panPointer: null,
   suppressNextClick: false,
   hotspotDrag: null,
@@ -80,7 +81,7 @@ function round1(value) {
 }
 
 function isPortraitMobile() {
-  return window.matchMedia('(orientation: portrait)').matches;
+  return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
 }
 
 function setLoadingBackgroundVariables() {
@@ -139,7 +140,7 @@ function renderBackground() {
   bunkerBackground.src = ACTIVE_ASSETS.backgrounds?.bunkerRoom || DEFAULT_ASSETS.backgrounds.bunkerRoom;
   bunkerBackground.addEventListener('load', () => {
     updateStageSize();
-    if (appState.entered && !appState.hasUserPanned) centerPan();
+    centerPanOnce();
   });
 }
 
@@ -158,7 +159,7 @@ function applyHotspotStyle(el, hotspot) {
 
 function createDustParticles() {
   if (!dustLayer || dustLayer.childElementCount) return;
-  const count = window.matchMedia('(max-width: 1024px)').matches ? 28 : 46;
+  const count = window.matchMedia('(max-width: 820px)').matches ? 28 : 46;
   for (let i = 0; i < count; i += 1) {
     const particle = document.createElement('span');
     particle.className = 'dust-particle';
@@ -241,14 +242,12 @@ async function forceRotate() {
     console.info('[Feisk] Rotate lock not supported by this browser:', error);
   } finally {
     updateStageSize();
-    centerPan();
   }
 }
 
 function continuePortrait() {
   hideRotatePrompt();
   updateStageSize();
-  centerPan();
 }
 
 function renderHotspots() {
@@ -322,7 +321,7 @@ function updateStageSize() {
 function updatePanBounds() {
   if (!isPortraitMobile()) return;
   const viewportWidth = sceneViewport.clientWidth;
-  const stageWidth = sceneStage.offsetWidth;
+  const stageWidth = sceneStage.getBoundingClientRect().width || sceneStage.offsetWidth;
   appState.maxPanX = 0;
   appState.minPanX = Math.min(0, viewportWidth - stageWidth);
   appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
@@ -338,13 +337,21 @@ function centerPan() {
   updatePanBounds();
   if (!isPortraitMobile()) return;
   const viewportWidth = sceneViewport.clientWidth;
-  const stageWidth = sceneStage.offsetWidth;
+  const stageWidth = sceneStage.getBoundingClientRect().width || sceneStage.offsetWidth;
   appState.panX = clamp(Math.round((viewportWidth - stageWidth) / 2), appState.minPanX, appState.maxPanX);
   applyPan();
 }
 
+function centerPanOnce() {
+  if (!appState.entered || appState.didInitialPortraitCenter || !isPortraitMobile()) return;
+  updateStageSize();
+  centerPan();
+  appState.didInitialPortraitCenter = true;
+}
+
 function onViewportPointerDown(event) {
   if (!isPortraitMobile() || appState.editorMode || appState.panelOpen || appState.computerOpen) return;
+  updatePanBounds();
   appState.panPointer = {
     id: event.pointerId,
     startX: event.clientX,
@@ -368,7 +375,9 @@ function onViewportPointerUp(event) {
   if (!appState.panPointer || event.pointerId !== appState.panPointer.id) return;
   appState.suppressNextClick = appState.panPointer.dragged;
   sceneViewport.classList.remove('is-dragging');
-  sceneViewport.releasePointerCapture(event.pointerId);
+  if (sceneViewport.hasPointerCapture?.(event.pointerId)) {
+    sceneViewport.releasePointerCapture(event.pointerId);
+  }
   appState.panPointer = null;
   setTimeout(() => { appState.suppressNextClick = false; }, 80);
 }
@@ -384,7 +393,7 @@ function enterBunker() {
     bunkerScene.classList.add('bunker-scene--active');
     app.classList.add('app--inside');
     updateStageSize();
-    centerPan();
+    centerPanOnce();
     showRotatePromptIfNeeded();
   }, 900);
 }
@@ -601,14 +610,14 @@ function bindEvents() {
   window.addEventListener('pointerup', onWindowPointerUp);
   window.addEventListener('resize', () => {
     updateStageSize();
-    if (!appState.hasUserPanned) centerPan();
     showRotatePromptIfNeeded();
   });
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
       appState.hasUserPanned = false;
+      appState.didInitialPortraitCenter = false;
       updateStageSize();
-      centerPan();
+      centerPanOnce();
       showRotatePromptIfNeeded();
     }, 250);
   });
