@@ -51,9 +51,8 @@ button { font: inherit; }
   overflow: hidden;
   background: #050607;
   touch-action: none;
-  cursor: grab;
+  cursor: default;
 }
-.scene-viewport.is-dragging { cursor: grabbing; }
 .scene-stage {
   position: absolute;
   left: 0;
@@ -414,7 +413,7 @@ button { font: inherit; }
     height: auto;
   }
 }
-@media (max-width: 1024px) and (orientation: portrait) {
+@media (orientation: portrait) {
   .scene-stage {
     height: 100dvh;
     top: 50%;
@@ -424,6 +423,8 @@ button { font: inherit; }
     height: 100dvh;
     width: auto;
   }
+  .scene-viewport { cursor: grab; }
+  .scene-viewport.is-dragging { cursor: grabbing; }
   .pan-hint { display: block; }
   .app--panel-open .pan-hint { display: none; }
   .info-panel {

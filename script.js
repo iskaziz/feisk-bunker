@@ -80,7 +80,7 @@ function round1(value) {
 }
 
 function isPortraitMobile() {
-  return window.matchMedia('(max-width: 1024px) and (orientation: portrait)').matches;
+  return window.matchMedia('(orientation: portrait)').matches;
 }
 
 function setLoadingBackgroundVariables() {
