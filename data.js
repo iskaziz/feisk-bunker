@@ -4,7 +4,6 @@ window.FEISK_ASSETS = {
     loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
     loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
   },
-
   hotspots: [
     {
       id: 'filing-cabinet',
@@ -12,10 +11,12 @@ window.FEISK_ASSETS = {
       title: 'Production Filing Cabinet',
       kicker: 'Company Records',
       body: 'Feisk Sdn Bhd was founded in December 2010 by brothers Iskander and Feisal Azizuddin.\n\nThese drawers hold the paper trail: call sheets, scripts, grant notes, festival submissions, invoices and old production maps.',
-      x: 3.6,
-      y: 31.2,
-      width: 8.4,
-      height: 45.6
+      x: 3.4,
+      y: 30.5,
+      width: 8.8,
+      height: 47.0,
+      dotX: 7.8,
+      dotY: 49.0
     },
     {
       id: 'wall-safe',
@@ -23,54 +24,64 @@ window.FEISK_ASSETS = {
       title: 'Locked Development Safe',
       kicker: 'In Development',
       body: 'The safe stores restricted files for Feisk projects and unreleased materials.\n\nCurrent archive notes include crime thriller Curi Makan, fantasy thriller Writers, desktop thriller Send Tudes, and satay-western Selendangs & Shotguns.',
-      x: 20.5,
-      y: 36.6,
-      width: 9.8,
-      height: 19.4
+      x: 20.2,
+      y: 35.6,
+      width: 10.1,
+      height: 20.2,
+      dotX: 25.6,
+      dotY: 46.0
     },
     {
       id: 'lcd-monitors',
-      label: 'LCD Monitors',
+      label: 'Screen Array',
       title: 'Feisk Screen Array',
       kicker: 'Films / Platforms',
       body: 'Feisk Productions has produced content for film, television and digital platforms.\n\nThe monitors act as the bunker interface for trailers, stills, platform notes and release records.',
-      x: 36.7,
-      y: 26.6,
-      width: 20.1,
-      height: 25.1
+      x: 36.5,
+      y: 25.7,
+      width: 20.4,
+      height: 25.8,
+      dotX: 46.9,
+      dotY: 38.2
     },
     {
       id: 'old-desktop-computer',
-      label: 'Old Desktop Computer',
+      label: 'Terminal',
       title: 'Old Desktop Computer',
       kicker: 'Main Terminal',
       body: 'The bunker terminal opens the main interactive archive: films, biographies, project windows, hidden folders and contact access.',
-      x: 41.8,
-      y: 51.7,
-      width: 15.8,
-      height: 15.2
+      x: 41.7,
+      y: 51.0,
+      width: 16.0,
+      height: 15.8,
+      dotX: 48.0,
+      dotY: 58.0
     },
     {
       id: 'rotary-telephone',
-      label: 'Rotary Telephone',
+      label: 'Telephone',
       title: 'Rotary Telephone',
       kicker: 'Contact Line',
       body: 'A direct line to the surface.\n\nFeisk can be reached at get.creative@feisk.com.my for production enquiries, collaborations and archive access.',
       x: 31.0,
-      y: 56.0,
-      width: 7.2,
-      height: 9.4
+      y: 55.1,
+      width: 7.3,
+      height: 10.1,
+      dotX: 34.5,
+      dotY: 60.1
     },
     {
       id: 'swivel-desk-chair',
-      label: 'Swivel Desk Chair',
+      label: 'Chair',
       title: 'Swivel Desk Chair',
       kicker: "The Producers' Seat",
       body: 'Iskander Azizuddin is a Malaysian film producer with more than 15 years of creative and media industry experience.\n\nFeisal Azizuddin is a filmmaker whose short films often explore Malaysian social issues through horror, thriller and dramatic forms.',
-      x: 37.2,
-      y: 61.6,
-      width: 12.8,
-      height: 25.8
+      x: 37.1,
+      y: 61.0,
+      width: 13.1,
+      height: 26.4,
+      dotX: 43.6,
+      dotY: 73.0
     },
     {
       id: 'bookshelf',
@@ -78,33 +89,25 @@ window.FEISK_ASSETS = {
       title: 'Research Bookshelf',
       kicker: 'Reference Archive',
       body: 'A shelf of cinema books, treatment binders, research notes, festival catalogues, short-film references and odd props collected across years of independent production work.',
-      x: 62.3,
-      y: 23.8,
-      width: 14.6,
-      height: 55.6
+      x: 62.0,
+      y: 22.8,
+      width: 15.1,
+      height: 56.4,
+      dotX: 69.3,
+      dotY: 43.8
     },
     {
       id: 'white-fluffy-rug',
-      label: 'White Fluffy Rug',
+      label: 'Rug',
       title: 'White Fluffy Rug',
       kicker: 'Festival Clue',
       body: 'A strange soft patch in an otherwise hard concrete room.\n\nHidden beneath it: a reminder that Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.',
-      x: 18.0,
-      y: 76.0,
-      width: 57.0,
-      height: 16.8
-    },
-    {
-      id: 'tikus-book',
-      label: 'Tikus Book',
-      title: 'Tikus',
-      kicker: 'Hidden Project File',
-      body: 'A medieval-looking book marked Tikus sits partly off-screen on the foreground shelf.\n\nThis can be used as a hidden link into the Tikus archive, a secret project page, or an easter egg connected to the wider Feisk bunker.',
-      x: 0.4,
-      y: 78.4,
-      width: 22.6,
-      height: 21.3,
-      radius: 14
+      x: 13.4,
+      y: 75.0,
+      width: 59.5,
+      height: 20.8,
+      dotX: 44.3,
+      dotY: 85.2
     },
     {
       id: 'vault-door',
@@ -112,13 +115,27 @@ window.FEISK_ASSETS = {
       title: 'Vault Door',
       kicker: 'Restricted Exit',
       body: 'The heavy vault door leads deeper into the Feisk archive.\n\nFuture versions can use this as navigation to another room or hidden page.',
-      x: 80.1,
-      y: 25.8,
-      width: 14.8,
-      height: 51.2
+      x: 80.0,
+      y: 24.8,
+      width: 15.0,
+      height: 52.2,
+      dotX: 84.8,
+      dotY: 47.8
+    },
+    {
+      id: 'tikus-book',
+      label: 'Tikus Book',
+      title: 'Tikus',
+      kicker: 'Hidden Project File',
+      body: 'A partly hidden medieval book marked Tikus sits on the foreground shelf.\n\nThis can link visitors into the Tikus project archive, microsite, trailer, or interactive evidence room.',
+      x: 0.2,
+      y: 78.0,
+      width: 23.5,
+      height: 22.0,
+      dotX: 12.2,
+      dotY: 90.6
     }
   ],
-
   computerIcons: [
     {
       id: 'about',
@@ -162,5 +179,4 @@ window.FEISK_ASSETS = {
     }
   ]
 };
-
 window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;

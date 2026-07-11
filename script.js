@@ -155,6 +155,16 @@ function applyHotspotStyle(el, hotspot) {
   el.style.width = `${hotspot.width}%`;
   el.style.height = `${hotspot.height}%`;
   el.style.borderRadius = hotspot.shape === 'ellipse' ? '999px' : `${hotspot.radius ?? 10}px`;
+
+  const dot = el.querySelector('.hotspot__dot');
+  if (dot) {
+    const absoluteDotX = typeof hotspot.dotX === 'number' ? hotspot.dotX : hotspot.x + hotspot.width / 2;
+    const absoluteDotY = typeof hotspot.dotY === 'number' ? hotspot.dotY : hotspot.y + hotspot.height / 2;
+    const localDotX = hotspot.width ? ((absoluteDotX - hotspot.x) / hotspot.width) * 100 : 50;
+    const localDotY = hotspot.height ? ((absoluteDotY - hotspot.y) / hotspot.height) * 100 : 50;
+    dot.style.left = `${clamp(localDotX, 0, 100)}%`;
+    dot.style.top = `${clamp(localDotY, 0, 100)}%`;
+  }
 }
 
 function createDustParticles() {
@@ -254,16 +264,29 @@ function renderHotspots() {
   hotspotsLayer.innerHTML = '';
   hotspots.forEach((hotspot) => {
     const button = document.createElement('button');
-    button.className = 'hotspot';
+    button.className = 'hotspot hotspot--dot-trigger';
     button.type = 'button';
     button.dataset.hotspotId = hotspot.id;
     button.setAttribute('aria-label', hotspot.label || hotspot.title || hotspot.id);
-    applyHotspotStyle(button, hotspot);
+
+    const dot = document.createElement('span');
+    dot.className = 'hotspot__dot';
+    dot.setAttribute('aria-hidden', 'true');
+    dot.innerHTML = '<span class="hotspot__dot-core"></span><span class="hotspot__dot-ring"></span><span class="hotspot__dot-pulse"></span>';
+
+    const label = document.createElement('span');
+    label.className = 'hotspot__label';
+    label.textContent = hotspot.label || hotspot.title || hotspot.id;
+    label.setAttribute('aria-hidden', 'true');
 
     const resizeHandle = document.createElement('span');
     resizeHandle.className = 'hotspot__resize-handle';
     resizeHandle.setAttribute('aria-hidden', 'true');
+
+    button.appendChild(dot);
+    button.appendChild(label);
     button.appendChild(resizeHandle);
+    applyHotspotStyle(button, hotspot);
 
     button.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -470,7 +493,10 @@ function updateEditorValues() {
     return;
   }
   editorSelected.textContent = hotspot.label || hotspot.id;
-  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}`;
+  const dotText = typeof hotspot.dotX === 'number' && typeof hotspot.dotY === 'number'
+    ? `\ndotX: ${hotspot.dotX}\ndotY: ${hotspot.dotY}`
+    : '';
+  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}${dotText}`;
 }
 
 function stagePointToPercent(clientX, clientY) {
