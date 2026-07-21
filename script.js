@@ -1,8 +1,4 @@
 const app = document.querySelector('#app');
-const hatchButton = document.querySelector('#hatchButton');
-const loadingText = document.querySelector('#loadingText');
-const loadingProgress = document.querySelector('#loadingProgress');
-const loadingScreen = document.querySelector('#loadingScreen');
 const bunkerScene = document.querySelector('#bunkerScene');
 const sceneViewport = document.querySelector('#sceneViewport');
 const sceneStage = document.querySelector('#sceneStage');
@@ -39,8 +35,6 @@ const computerWindowBody = document.querySelector('#computerWindowBody');
 const DEFAULT_ASSETS = {
   backgrounds: {
     bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
-    loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
-    loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
   },
   hotspots: [],
   computerIcons: []
@@ -84,12 +78,6 @@ function isPortraitMobile() {
   return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
 }
 
-function setLoadingBackgroundVariables() {
-  const backgrounds = ACTIVE_ASSETS.backgrounds || {};
-  document.documentElement.style.setProperty('--loading-bg-image', `url('${backgrounds.loadingLandscape || DEFAULT_ASSETS.backgrounds.loadingLandscape}')`);
-  document.documentElement.style.setProperty('--loading-bg-image-portrait', `url('${backgrounds.loadingPortrait || DEFAULT_ASSETS.backgrounds.loadingPortrait}')`);
-}
-
 function preloadImage(src) {
   return new Promise((resolve) => {
     if (!src) {
@@ -105,35 +93,24 @@ function preloadImage(src) {
 
 function getImageSources() {
   const bg = ACTIVE_ASSETS.backgrounds || {};
-  const loading = window.FEISK_LOADING_SCREEN?.uiAssets || [];
-  return [bg.bunkerRoom, bg.loadingPortrait, bg.loadingLandscape, ...loading].filter(Boolean);
+  return [bg.bunkerRoom].filter(Boolean);
 }
 
 async function preloadAssets() {
-  setLoadingBackgroundVariables();
   const sources = [...new Set(getImageSources())];
-  if (!sources.length) {
-    unlockHatch();
-    return;
-  }
-  let doneCount = 0;
-  await Promise.all(sources.map(async (src) => {
-    await preloadImage(src);
-    doneCount += 1;
-    const pct = Math.round((doneCount / sources.length) * 100);
-    if (loadingProgress) loadingProgress.style.width = `${pct}%`;
-    if (loadingText) loadingText.textContent = `Loading vault assets... ${pct}%`;
-  }));
-  unlockHatch();
+  await Promise.all(sources.map((src) => preloadImage(src)));
+  appState.loaded = true;
 }
 
-function unlockHatch() {
+function enterBunkerDirectly() {
   appState.loaded = true;
-  app.classList.remove('app--loading');
-  app.classList.add('app--ready');
-  hatchButton.disabled = false;
-  loadingText.textContent = 'Click the hatch to enter.';
-  loadingProgress.style.width = '100%';
+  appState.entered = true;
+  app.classList.remove('app--loading', 'app--entering');
+  app.classList.add('app--ready', 'app--inside', 'app--direct');
+  bunkerScene.classList.add('bunker-scene--active');
+  updateStageSize();
+  centerPanOnce();
+  showRotatePromptIfNeeded();
 }
 
 function renderBackground() {
@@ -406,19 +383,7 @@ function onViewportPointerUp(event) {
 }
 
 function enterBunker() {
-  if (!appState.loaded || appState.entered) return;
-  appState.entered = true;
-  hatchButton.disabled = true;
-  app.classList.add('app--entering');
-  loadingText.textContent = 'Vault hatch opening...';
-  setTimeout(() => {
-    loadingScreen.setAttribute('aria-hidden', 'true');
-    bunkerScene.classList.add('bunker-scene--active');
-    app.classList.add('app--inside');
-    updateStageSize();
-    centerPanOnce();
-    showRotatePromptIfNeeded();
-  }, 900);
+  enterBunkerDirectly();
 }
 
 function openInfoPanel(id) {
@@ -615,7 +580,6 @@ function startEditorDrag(event) {
 }
 
 function bindEvents() {
-  hatchButton.addEventListener('click', enterBunker);
   closePanelButton.addEventListener('click', closeInfoPanel);
   panelBackdrop.addEventListener('click', closeInfoPanel);
   editLadderHotspot.addEventListener('click', handleLadderTripleClick);
@@ -669,10 +633,10 @@ function boot() {
   renderComputerIcons();
   createDustParticles();
   bindEvents();
-  preloadAssets().catch(() => unlockHatch());
-  setTimeout(() => {
-    if (!appState.loaded) unlockHatch();
-  }, 6000);
+  enterBunkerDirectly();
+  preloadAssets().catch(() => {
+    appState.loaded = true;
+  });
 }
 
 window.addEventListener('DOMContentLoaded', boot);
