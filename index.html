@@ -4,85 +4,106 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Feisk Productions Vault</title>
+  <meta name="description" content="Feisk Productions immersive bunker archive." />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="prop-placement.css" />
 </head>
 <body>
-  <main id="app" class="app app--inside app--ready app--direct">
-    <section id="bunkerScene" class="bunker-scene bunker-scene--active screen" aria-label="Feisk Productions bunker room">
+  <main id="app" class="app app--direct" aria-live="polite">
+    <section id="bunkerScene" class="bunker-scene screen bunker-scene--active" aria-label="Feisk Productions bunker room">
       <div id="sceneViewport" class="scene-viewport">
-        <div id="sceneStage" class="scene-stage">
-          <img id="bunkerBackground" class="bunker-scene__image" src="" alt="Feisk Productions bunker room" draggable="false" />
+        <div id="sceneStage" class="scene-stage" aria-label="Interactive bunker scene">
+          <img
+            id="bunkerBackground"
+            class="bunker-scene__image"
+            src="assets/backgrounds/bunker-room-final.png"
+            alt="An illustrated underground bunker office archive"
+            draggable="false"
+          />
+
           <div class="bunker-effects" aria-hidden="true">
             <div class="bunker-light-flicker"></div>
             <div id="dustLayer" class="dust-layer"></div>
           </div>
-          <div id="hotspotsLayer" class="hotspots-layer" aria-label="Interactive bunker objects"></div>
-          <button id="editLadderHotspot" class="edit-ladder-hotspot" type="button" aria-label="Hidden editor trigger"></button>
-        </div>
-      </div>
-      <div id="panHint" class="pan-hint">Drag sideways to inspect the bunker</div>
-    </section>
 
-    <section id="rotatePrompt" class="rotate-prompt" hidden aria-hidden="true">
-      <div class="rotate-prompt__panel">
-        <div class="rotate-prompt__icon">↻</div>
-        <h2>Rotate for full bunker view</h2>
-        <p>This vault is designed as a widescreen point-and-click scene.</p>
-        <div class="rotate-prompt__actions">
-          <button id="forceRotateButton" type="button">Force rotate</button>
-          <button id="continuePortraitButton" type="button">Continue in portrait</button>
+          <div id="hotspotsLayer" class="hotspots-layer" aria-label="Interactive bunker objects"></div>
+
+          <button
+            id="editLadderHotspot"
+            class="edit-ladder-hotspot"
+            type="button"
+            aria-label="Hidden editor access"
+            title=""
+          ></button>
         </div>
       </div>
     </section>
 
     <div id="panelBackdrop" class="panel-backdrop" hidden></div>
-    <article id="infoPanel" class="info-panel" aria-hidden="true" role="dialog" aria-modal="true">
-      <button id="closePanelButton" class="info-panel__close" type="button" aria-label="Close information panel">×</button>
-      <p id="infoKicker" class="info-panel__kicker"></p>
-      <h2 id="infoTitle" class="info-panel__title"></h2>
-      <div class="info-panel__scroll">
-        <p id="infoBody" class="info-panel__body"></p>
-      </div>
-    </article>
 
-    <section id="computerOverlay" class="computer-overlay" aria-hidden="true" role="dialog" aria-modal="true">
-      <div class="computer-terminal">
-        <header class="computer-terminal__header">
-          <span>FEISK TERMINAL // ARCHIVE ACCESS</span>
-          <button id="computerCloseButton" type="button" aria-label="Close computer terminal">×</button>
+    <aside id="infoPanel" class="info-panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
+      <button id="panelClose" class="info-panel__close" type="button" aria-label="Close information panel">×</button>
+      <p id="panelKicker" class="info-panel__kicker"></p>
+      <h2 id="panelTitle" class="info-panel__title"></h2>
+      <div class="info-panel__scroll">
+        <p id="panelBody" class="info-panel__body"></p>
+      </div>
+    </aside>
+
+    <section id="desktopOverlay" class="desktop-overlay" aria-label="Feisk terminal desktop" hidden>
+      <div id="desktopShell" class="desktop-shell" role="dialog" aria-modal="true" aria-labelledby="desktopTitle">
+        <header class="desktop-shell__topbar">
+          <div>
+            <p class="desktop-shell__kicker">FEISK TERMINAL // ARCHIVE ACCESS</p>
+            <h2 id="desktopTitle">Feisk Productions Desktop</h2>
+          </div>
+          <button id="desktopClose" class="desktop-shell__close" type="button" aria-label="Close desktop">×</button>
         </header>
-        <div class="computer-terminal__body">
-          <nav id="computerIcons" class="computer-icons" aria-label="Computer archive icons"></nav>
-          <article class="computer-window">
-            <p id="computerWindowKicker" class="computer-window__kicker">Select a file</p>
-            <h2 id="computerWindowTitle">Feisk Productions</h2>
-            <p id="computerWindowBody">Choose an icon to open a bunker archive window.</p>
-          </article>
+
+        <div class="desktop-screen">
+          <div class="desktop-wallpaper" aria-hidden="true"></div>
+          <div id="desktopIcons" class="desktop-icons" aria-label="Desktop icons"></div>
+          <div id="desktopWindowLayer" class="desktop-window-layer" aria-live="polite"></div>
         </div>
+
+        <footer class="desktop-taskbar">
+          <button id="desktopStart" class="desktop-start" type="button">FEISK</button>
+          <div id="desktopTaskList" class="desktop-task-list" aria-label="Open archive windows"></div>
+          <div id="desktopClock" class="desktop-clock" aria-label="Terminal status">ARCHIVE ONLINE</div>
+        </footer>
       </div>
     </section>
 
-    <aside id="editorPanel" class="editor-panel" hidden>
-      <header id="editorHeader" class="editor-panel__header">
-        <span>Placement Editor</span>
-        <div class="editor-panel__window-buttons">
-          <button id="editorMinimiseButton" type="button" aria-label="Minimise editor">–</button>
-          <button id="editorCloseButton" type="button" aria-label="Close editor">×</button>
+    <section id="placementEditor" class="editor-panel" aria-label="Placement editor" hidden>
+      <header id="editorDragHandle" class="editor-panel__header">
+        <div>
+          <p class="editor-panel__kicker">Placement Editor</p>
+          <h2>Hotspot Dots</h2>
+        </div>
+        <div class="editor-panel__window-actions">
+          <button id="editorMinimise" type="button" aria-label="Minimise editor">–</button>
+          <button id="editorClose" type="button" aria-label="Close editor">×</button>
         </div>
       </header>
       <div id="editorBody" class="editor-panel__body">
-        <p id="editorStatus" class="editor-panel__status">Triple-click the ladder to toggle this editor.</p>
-        <h3 id="editorSelected">No hotspot selected</h3>
-        <pre id="editorValues"></pre>
-        <div class="editor-panel__buttons">
-          <button id="editorCopyButton" type="button">Copy placement</button>
-          <button id="editorDownloadButton" type="button">Download data.js</button>
-          <button id="editorResetButton" type="button">Reset</button>
+        <p class="editor-panel__hint">Triple-click the ladder to toggle. Drag a box to move it, drag the gold corner to resize, or drag the green dot handle to move the visible dot.</p>
+        <h3 id="editorSelectedTitle">No hotspot selected</h3>
+        <div class="editor-grid">
+          <label>X <input id="editorX" type="number" step="0.1" /></label>
+          <label>Y <input id="editorY" type="number" step="0.1" /></label>
+          <label>W <input id="editorWidth" type="number" step="0.1" /></label>
+          <label>H <input id="editorHeight" type="number" step="0.1" /></label>
+          <label>Dot X <input id="editorDotX" type="number" step="0.1" /></label>
+          <label>Dot Y <input id="editorDotY" type="number" step="0.1" /></label>
         </div>
-        <p class="editor-panel__help">Drag hotspots to move. Drag the gold handle to resize. Drag this window by its header.</p>
+        <div class="editor-actions">
+          <button id="copyPlacement" type="button">Copy placement</button>
+          <button id="downloadData" type="button">Download data.js</button>
+          <button id="resetPlacement" type="button">Reset</button>
+        </div>
       </div>
-    </aside>
+      <button id="editorRestore" class="editor-restore" type="button" hidden>▢ Editor</button>
+    </section>
   </main>
 
   <script src="data.js"></script>

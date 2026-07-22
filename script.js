@@ -1,642 +1,599 @@
-const app = document.querySelector('#app');
-const bunkerScene = document.querySelector('#bunkerScene');
-const sceneViewport = document.querySelector('#sceneViewport');
-const sceneStage = document.querySelector('#sceneStage');
-const bunkerBackground = document.querySelector('#bunkerBackground');
-const hotspotsLayer = document.querySelector('#hotspotsLayer');
-const editLadderHotspot = document.querySelector('#editLadderHotspot');
-const panelBackdrop = document.querySelector('#panelBackdrop');
-const infoPanel = document.querySelector('#infoPanel');
-const closePanelButton = document.querySelector('#closePanelButton');
-const infoKicker = document.querySelector('#infoKicker');
-const infoTitle = document.querySelector('#infoTitle');
-const infoBody = document.querySelector('#infoBody');
-const editorPanel = document.querySelector('#editorPanel');
-const editorHeader = document.querySelector('#editorHeader');
-const editorStatus = document.querySelector('#editorStatus');
-const editorSelected = document.querySelector('#editorSelected');
-const editorValues = document.querySelector('#editorValues');
-const editorCopyButton = document.querySelector('#editorCopyButton');
-const editorDownloadButton = document.querySelector('#editorDownloadButton');
-const editorResetButton = document.querySelector('#editorResetButton');
-const editorCloseButton = document.querySelector('#editorCloseButton');
-const editorMinimiseButton = document.querySelector('#editorMinimiseButton');
-const dustLayer = document.querySelector('#dustLayer');
-const rotatePrompt = document.querySelector('#rotatePrompt');
-const forceRotateButton = document.querySelector('#forceRotateButton');
-const continuePortraitButton = document.querySelector('#continuePortraitButton');
-const computerOverlay = document.querySelector('#computerOverlay');
-const computerIcons = document.querySelector('#computerIcons');
-const computerCloseButton = document.querySelector('#computerCloseButton');
-const computerWindowKicker = document.querySelector('#computerWindowKicker');
-const computerWindowTitle = document.querySelector('#computerWindowTitle');
-const computerWindowBody = document.querySelector('#computerWindowBody');
+(() => {
+  'use strict';
 
-const DEFAULT_ASSETS = {
-  backgrounds: {
-    bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
-  },
-  hotspots: [],
-  computerIcons: []
-};
+  const config = window.FEISK_CONFIG || {};
+  const hotspots = Array.isArray(config.hotspots) ? structuredClone(config.hotspots) : [];
+  const desktopIcons = Array.isArray(config.desktopIcons) ? config.desktopIcons : [];
 
-const ACTIVE_ASSETS = window.FEISK_ASSETS || DEFAULT_ASSETS;
-const hotspots = Array.isArray(ACTIVE_ASSETS.hotspots) ? ACTIVE_ASSETS.hotspots : [];
-const originalHotspots = hotspots.map((hotspot) => ({ ...hotspot }));
+  const app = document.getElementById('app');
+  const backgroundImage = document.getElementById('bunkerBackground');
+  const hotspotsLayer = document.getElementById('hotspotsLayer');
+  const dustLayer = document.getElementById('dustLayer');
+  const ladderTrigger = document.getElementById('editLadderHotspot');
 
-const appState = {
-  loaded: false,
-  entered: false,
-  panelOpen: false,
-  editorMode: false,
-  selectedId: null,
-  ladderClickCount: 0,
-  ladderClickTimer: null,
-  panX: 0,
-  minPanX: 0,
-  maxPanX: 0,
-  hasUserPanned: false,
-  didInitialPortraitCenter: false,
-  panPointer: null,
-  suppressNextClick: false,
-  hotspotDrag: null,
-  resizeDrag: null,
-  editorDrag: null,
-  rotatePromptDismissed: false,
-  computerOpen: false
-};
+  const panelBackdrop = document.getElementById('panelBackdrop');
+  const infoPanel = document.getElementById('infoPanel');
+  const panelClose = document.getElementById('panelClose');
+  const panelKicker = document.getElementById('panelKicker');
+  const panelTitle = document.getElementById('panelTitle');
+  const panelBody = document.getElementById('panelBody');
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+  const desktopOverlay = document.getElementById('desktopOverlay');
+  const desktopClose = document.getElementById('desktopClose');
+  const desktopIconsHost = document.getElementById('desktopIcons');
+  const desktopWindowLayer = document.getElementById('desktopWindowLayer');
+  const desktopTaskList = document.getElementById('desktopTaskList');
+  const desktopStart = document.getElementById('desktopStart');
 
-function round1(value) {
-  return Math.round(value * 10) / 10;
-}
+  const editorPanel = document.getElementById('placementEditor');
+  const editorDragHandle = document.getElementById('editorDragHandle');
+  const editorBody = document.getElementById('editorBody');
+  const editorMinimise = document.getElementById('editorMinimise');
+  const editorRestore = document.getElementById('editorRestore');
+  const editorClose = document.getElementById('editorClose');
+  const editorSelectedTitle = document.getElementById('editorSelectedTitle');
+  const editorFields = {
+    x: document.getElementById('editorX'),
+    y: document.getElementById('editorY'),
+    width: document.getElementById('editorWidth'),
+    height: document.getElementById('editorHeight'),
+    dotX: document.getElementById('editorDotX'),
+    dotY: document.getElementById('editorDotY')
+  };
+  const copyPlacement = document.getElementById('copyPlacement');
+  const downloadData = document.getElementById('downloadData');
+  const resetPlacement = document.getElementById('resetPlacement');
 
-function isPortraitMobile() {
-  return window.matchMedia('(max-width: 820px) and (orientation: portrait)').matches;
-}
+  let editorOpen = false;
+  let selectedHotspotId = null;
+  let ladderClickCount = 0;
+  let ladderClickTimer = null;
 
-function preloadImage(src) {
-  return new Promise((resolve) => {
-    if (!src) {
-      resolve();
+  let desktopZ = 10;
+  const openDesktopWindows = new Map();
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function round1(value) {
+    return Math.round(value * 10) / 10;
+  }
+
+  function getHotspotById(id) {
+    return hotspots.find((item) => item.id === id);
+  }
+
+  function setSceneBackground() {
+    if (config.scene && config.scene.background) {
+      backgroundImage.src = config.scene.background;
+    }
+  }
+
+  function localDotPercent(item) {
+    const localX = item.width ? ((item.dotX - item.x) / item.width) * 100 : 50;
+    const localY = item.height ? ((item.dotY - item.y) / item.height) * 100 : 50;
+    return {
+      x: clamp(localX, 0, 100),
+      y: clamp(localY, 0, 100)
+    };
+  }
+
+  function renderHotspots() {
+    hotspotsLayer.innerHTML = '';
+
+    hotspots.forEach((item) => {
+      const button = document.createElement('button');
+      const localDot = localDotPercent(item);
+
+      button.type = 'button';
+      button.className = 'hotspot';
+      button.dataset.hotspotId = item.id;
+      button.setAttribute('aria-label', item.label || item.title || item.id);
+      button.style.left = `${item.x}%`;
+      button.style.top = `${item.y}%`;
+      button.style.width = `${item.width}%`;
+      button.style.height = `${item.height}%`;
+      button.style.setProperty('--local-dot-x', `${localDot.x}%`);
+      button.style.setProperty('--local-dot-y', `${localDot.y}%`);
+
+      if (editorOpen) {
+        button.classList.add('is-editable');
+      }
+      if (selectedHotspotId === item.id) {
+        button.classList.add('is-selected');
+      }
+
+      button.innerHTML = `
+        <span class="hotspot__dot" aria-hidden="true">
+          <span class="hotspot__dot-pulse"></span>
+          <span class="hotspot__dot-ring"></span>
+          <span class="hotspot__dot-core"></span>
+        </span>
+        <span class="hotspot__dot-handle" aria-hidden="true"></span>
+        <span class="hotspot__label">${escapeHtml(item.label || item.title || item.id)}</span>
+      `;
+
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (editorOpen) {
+          selectHotspot(item.id);
+          return;
+        }
+        activateHotspot(item);
+      });
+
+      button.addEventListener('pointerdown', (event) => {
+        if (!editorOpen) return;
+        startHotspotEditDrag(event, item.id);
+      });
+
+      hotspotsLayer.appendChild(button);
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function activateHotspot(item) {
+    document.querySelectorAll('.hotspot').forEach((node) => node.classList.remove('is-active'));
+    const active = document.querySelector(`[data-hotspot-id="${CSS.escape(item.id)}"]`);
+    active?.classList.add('is-active');
+
+    if (item.action === 'computer') {
+      openDesktop();
       return;
     }
-    const img = new Image();
-    img.onload = resolve;
-    img.onerror = resolve;
-    img.src = src;
-  });
-}
 
-function getImageSources() {
-  const bg = ACTIVE_ASSETS.backgrounds || {};
-  return [bg.bunkerRoom].filter(Boolean);
-}
-
-async function preloadAssets() {
-  const sources = [...new Set(getImageSources())];
-  await Promise.all(sources.map((src) => preloadImage(src)));
-  appState.loaded = true;
-}
-
-function enterBunkerDirectly() {
-  appState.loaded = true;
-  appState.entered = true;
-  app.classList.remove('app--loading', 'app--entering');
-  app.classList.add('app--ready', 'app--inside', 'app--direct');
-  bunkerScene.classList.add('bunker-scene--active');
-  updateStageSize();
-  centerPanOnce();
-  showRotatePromptIfNeeded();
-}
-
-function renderBackground() {
-  bunkerBackground.src = ACTIVE_ASSETS.backgrounds?.bunkerRoom || DEFAULT_ASSETS.backgrounds.bunkerRoom;
-  bunkerBackground.addEventListener('load', () => {
-    updateStageSize();
-    centerPanOnce();
-  });
-}
-
-function getHotspotById(id) {
-  return hotspots.find((hotspot) => hotspot.id === id);
-}
-
-function applyHotspotStyle(el, hotspot) {
-  if (!el || !hotspot) return;
-  el.style.left = `${hotspot.x}%`;
-  el.style.top = `${hotspot.y}%`;
-  el.style.width = `${hotspot.width}%`;
-  el.style.height = `${hotspot.height}%`;
-  el.style.borderRadius = hotspot.shape === 'ellipse' ? '999px' : `${hotspot.radius ?? 10}px`;
-
-  const dot = el.querySelector('.hotspot__dot');
-  if (dot) {
-    const absoluteDotX = typeof hotspot.dotX === 'number' ? hotspot.dotX : hotspot.x + hotspot.width / 2;
-    const absoluteDotY = typeof hotspot.dotY === 'number' ? hotspot.dotY : hotspot.y + hotspot.height / 2;
-    const localDotX = hotspot.width ? ((absoluteDotX - hotspot.x) / hotspot.width) * 100 : 50;
-    const localDotY = hotspot.height ? ((absoluteDotY - hotspot.y) / hotspot.height) * 100 : 50;
-    dot.style.left = `${clamp(localDotX, 0, 100)}%`;
-    dot.style.top = `${clamp(localDotY, 0, 100)}%`;
+    openInfoPanel(item);
   }
-}
 
-function createDustParticles() {
-  if (!dustLayer || dustLayer.childElementCount) return;
-  const count = window.matchMedia('(max-width: 820px)').matches ? 28 : 46;
-  for (let i = 0; i < count; i += 1) {
-    const particle = document.createElement('span');
-    particle.className = 'dust-particle';
-    particle.style.setProperty('--dust-left', `${Math.random() * 100}%`);
-    particle.style.setProperty('--dust-size', `${1 + Math.random() * 2.2}px`);
-    particle.style.setProperty('--dust-duration', `${14 + Math.random() * 18}s`);
-    particle.style.setProperty('--dust-delay', `${-Math.random() * 22}s`);
-    particle.style.setProperty('--dust-drift', `${-45 + Math.random() * 90}px`);
-    dustLayer.appendChild(particle);
+  function openInfoPanel(item) {
+    closeDesktop();
+    panelKicker.textContent = item.kicker || 'Archive File';
+    panelTitle.textContent = item.title || item.label || item.id;
+    panelBody.textContent = item.body || '';
+
+    panelBackdrop.hidden = false;
+    infoPanel.hidden = false;
+    requestAnimationFrame(() => app.classList.add('app--panel-open'));
   }
-}
 
-function renderComputerIcons() {
-  if (!computerIcons) return;
-  const items = ACTIVE_ASSETS.computerIcons || [];
-  computerIcons.innerHTML = '';
-  items.forEach((item, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'computer-icon';
-    button.dataset.iconId = item.id;
-    button.textContent = `${item.icon || '▣'} ${item.label || item.title}`;
-    button.addEventListener('click', () => selectComputerIcon(item.id));
-    computerIcons.appendChild(button);
-    if (index === 0) setTimeout(() => selectComputerIcon(item.id), 0);
-  });
-}
+  function closeInfoPanel() {
+    app.classList.remove('app--panel-open');
+    document.querySelectorAll('.hotspot').forEach((node) => node.classList.remove('is-active'));
+    window.setTimeout(() => {
+      panelBackdrop.hidden = true;
+      infoPanel.hidden = true;
+    }, 180);
+  }
 
-function selectComputerIcon(id) {
-  const item = (ACTIVE_ASSETS.computerIcons || []).find((entry) => entry.id === id);
-  if (!item) return;
-  document.querySelectorAll('.computer-icon').forEach((el) => {
-    el.classList.toggle('is-selected', el.dataset.iconId === id);
-  });
-  computerWindowKicker.textContent = item.kicker || 'Archive File';
-  computerWindowTitle.textContent = item.title || item.label || id;
-  computerWindowBody.textContent = item.body || '';
-}
+  function renderDust() {
+    if (!dustLayer) return;
+    const count = window.matchMedia('(max-width: 820px)').matches ? 22 : 42;
+    const fragments = document.createDocumentFragment();
 
-function openComputerOverlay() {
-  appState.computerOpen = true;
-  closeInfoPanel();
-  app.classList.add('app--computer-open');
-  computerOverlay.setAttribute('aria-hidden', 'false');
-  renderComputerIcons();
-}
-
-function closeComputerOverlay() {
-  appState.computerOpen = false;
-  app.classList.remove('app--computer-open');
-  computerOverlay.setAttribute('aria-hidden', 'true');
-}
-
-function shouldShowRotatePrompt() {
-  return isPortraitMobile() && appState.entered && !appState.rotatePromptDismissed;
-}
-
-function showRotatePromptIfNeeded() {
-  const show = shouldShowRotatePrompt();
-  rotatePrompt.hidden = !show;
-  rotatePrompt.setAttribute('aria-hidden', show ? 'false' : 'true');
-}
-
-function hideRotatePrompt() {
-  appState.rotatePromptDismissed = true;
-  rotatePrompt.hidden = true;
-  rotatePrompt.setAttribute('aria-hidden', 'true');
-}
-
-async function forceRotate() {
-  hideRotatePrompt();
-  try {
-    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
+    for (let index = 0; index < count; index += 1) {
+      const particle = document.createElement('span');
+      particle.className = 'dust-particle';
+      particle.style.setProperty('--dust-left', `${Math.random() * 100}%`);
+      particle.style.setProperty('--dust-size', `${1 + Math.random() * 2.2}px`);
+      particle.style.setProperty('--dust-duration', `${13 + Math.random() * 16}s`);
+      particle.style.setProperty('--dust-delay', `${Math.random() * -22}s`);
+      particle.style.setProperty('--dust-drift', `${-40 + Math.random() * 80}px`);
+      fragments.appendChild(particle);
     }
-    if (screen.orientation?.lock) {
-      await screen.orientation.lock('landscape');
-    }
-  } catch (error) {
-    console.info('[Feisk] Rotate lock not supported by this browser:', error);
-  } finally {
-    updateStageSize();
+
+    dustLayer.innerHTML = '';
+    dustLayer.appendChild(fragments);
   }
-}
 
-function continuePortrait() {
-  hideRotatePrompt();
-  updateStageSize();
-}
-
-function renderHotspots() {
-  hotspotsLayer.innerHTML = '';
-  hotspots.forEach((hotspot) => {
-    const button = document.createElement('button');
-    button.className = 'hotspot hotspot--dot-trigger';
-    button.type = 'button';
-    button.dataset.hotspotId = hotspot.id;
-    button.setAttribute('aria-label', hotspot.label || hotspot.title || hotspot.id);
-
-    const dot = document.createElement('span');
-    dot.className = 'hotspot__dot';
-    dot.setAttribute('aria-hidden', 'true');
-    dot.innerHTML = '<span class="hotspot__dot-core"></span><span class="hotspot__dot-ring"></span><span class="hotspot__dot-pulse"></span>';
-
-    const label = document.createElement('span');
-    label.className = 'hotspot__label';
-    label.textContent = hotspot.label || hotspot.title || hotspot.id;
-    label.setAttribute('aria-hidden', 'true');
-
-    const resizeHandle = document.createElement('span');
-    resizeHandle.className = 'hotspot__resize-handle';
-    resizeHandle.setAttribute('aria-hidden', 'true');
-
-    button.appendChild(dot);
-    button.appendChild(label);
-    button.appendChild(resizeHandle);
-    applyHotspotStyle(button, hotspot);
-
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (appState.suppressNextClick) return;
-      if (appState.editorMode) {
-        selectHotspot(hotspot.id);
-        return;
-      }
-      if (hotspot.id === 'old-desktop-computer') {
-        openComputerOverlay();
-        return;
-      }
-      openInfoPanel(hotspot.id);
-    });
-
-    button.addEventListener('pointerdown', (event) => {
-      if (!appState.editorMode) return;
-      event.preventDefault();
-      event.stopPropagation();
-      selectHotspot(hotspot.id);
-      startHotspotDrag(event, hotspot.id);
-    });
-
-    resizeHandle.addEventListener('pointerdown', (event) => {
-      if (!appState.editorMode) return;
-      event.preventDefault();
-      event.stopPropagation();
-      selectHotspot(hotspot.id);
-      startResizeDrag(event, hotspot.id);
-    });
-
-    hotspotsLayer.appendChild(button);
-  });
-}
-
-function updateStageSize() {
-  if (!sceneStage || !bunkerBackground) return;
-  if (isPortraitMobile()) {
-    const ratio = bunkerBackground.naturalWidth && bunkerBackground.naturalHeight
-      ? bunkerBackground.naturalWidth / bunkerBackground.naturalHeight
-      : 16 / 9;
-    const stageHeight = window.innerHeight;
-    sceneStage.style.width = `${Math.ceil(stageHeight * ratio)}px`;
-    sceneStage.style.height = `${stageHeight}px`;
-  } else {
-    sceneStage.style.width = '';
-    sceneStage.style.height = '';
-    sceneStage.style.transform = '';
-    appState.panX = 0;
-    return;
-  }
-  updatePanBounds();
-}
-
-function updatePanBounds() {
-  if (!isPortraitMobile()) return;
-  const viewportWidth = sceneViewport.clientWidth;
-  const stageWidth = sceneStage.getBoundingClientRect().width || sceneStage.offsetWidth;
-  appState.maxPanX = 0;
-  appState.minPanX = Math.min(0, viewportWidth - stageWidth);
-  appState.panX = clamp(appState.panX, appState.minPanX, appState.maxPanX);
-  applyPan();
-}
-
-function applyPan() {
-  if (!isPortraitMobile()) return;
-  sceneStage.style.transform = `translate3d(${appState.panX}px, -50%, 0)`;
-}
-
-function centerPan() {
-  updatePanBounds();
-  if (!isPortraitMobile()) return;
-  const viewportWidth = sceneViewport.clientWidth;
-  const stageWidth = sceneStage.getBoundingClientRect().width || sceneStage.offsetWidth;
-  appState.panX = clamp(Math.round((viewportWidth - stageWidth) / 2), appState.minPanX, appState.maxPanX);
-  applyPan();
-}
-
-function centerPanOnce() {
-  if (!appState.entered || appState.didInitialPortraitCenter || !isPortraitMobile()) return;
-  updateStageSize();
-  centerPan();
-  appState.didInitialPortraitCenter = true;
-}
-
-function onViewportPointerDown(event) {
-  if (!isPortraitMobile() || appState.editorMode || appState.panelOpen || appState.computerOpen) return;
-  updatePanBounds();
-  appState.panPointer = {
-    id: event.pointerId,
-    startX: event.clientX,
-    startPanX: appState.panX,
-    dragged: false
-  };
-  sceneViewport.classList.add('is-dragging');
-  sceneViewport.setPointerCapture(event.pointerId);
-}
-
-function onViewportPointerMove(event) {
-  if (!appState.panPointer || event.pointerId !== appState.panPointer.id) return;
-  const delta = event.clientX - appState.panPointer.startX;
-  if (Math.abs(delta) > 4) appState.panPointer.dragged = true;
-  appState.panX = clamp(appState.panPointer.startPanX + delta, appState.minPanX, appState.maxPanX);
-  appState.hasUserPanned = true;
-  applyPan();
-}
-
-function onViewportPointerUp(event) {
-  if (!appState.panPointer || event.pointerId !== appState.panPointer.id) return;
-  appState.suppressNextClick = appState.panPointer.dragged;
-  sceneViewport.classList.remove('is-dragging');
-  if (sceneViewport.hasPointerCapture?.(event.pointerId)) {
-    sceneViewport.releasePointerCapture(event.pointerId);
-  }
-  appState.panPointer = null;
-  setTimeout(() => { appState.suppressNextClick = false; }, 80);
-}
-
-function enterBunker() {
-  enterBunkerDirectly();
-}
-
-function openInfoPanel(id) {
-  const hotspot = getHotspotById(id);
-  if (!hotspot) return;
-  appState.panelOpen = true;
-  infoKicker.textContent = hotspot.kicker || 'Archive';
-  infoTitle.textContent = hotspot.title || hotspot.label || id;
-  infoBody.textContent = hotspot.body || '';
-  panelBackdrop.hidden = false;
-  infoPanel.setAttribute('aria-hidden', 'false');
-  app.classList.add('app--panel-open');
-  document.querySelectorAll('.hotspot').forEach((el) => {
-    el.classList.toggle('is-active', el.dataset.hotspotId === id);
-  });
-}
-
-function closeInfoPanel() {
-  appState.panelOpen = false;
-  infoPanel.setAttribute('aria-hidden', 'true');
-  app.classList.remove('app--panel-open');
-  document.querySelectorAll('.hotspot').forEach((el) => el.classList.remove('is-active'));
-  setTimeout(() => {
-    if (!appState.panelOpen) panelBackdrop.hidden = true;
-  }, 220);
-}
-
-function handleLadderTripleClick() {
-  if (!appState.entered) return;
-  appState.ladderClickCount += 1;
-  editLadderHotspot.classList.add('edit-ladder-hotspot--ping');
-  setTimeout(() => editLadderHotspot.classList.remove('edit-ladder-hotspot--ping'), 180);
-  clearTimeout(appState.ladderClickTimer);
-  if (appState.ladderClickCount >= 3) {
-    appState.ladderClickCount = 0;
-    toggleEditorMode();
-    return;
-  }
-  appState.ladderClickTimer = setTimeout(() => {
-    appState.ladderClickCount = 0;
-  }, 900);
-}
-
-function toggleEditorMode(force) {
-  appState.editorMode = typeof force === 'boolean' ? force : !appState.editorMode;
-  app.classList.toggle('app--editor-mode', appState.editorMode);
-  editorPanel.hidden = !appState.editorMode;
-  if (appState.editorMode) {
+  function openDesktop() {
     closeInfoPanel();
-    selectHotspot(appState.selectedId || hotspots[0]?.id);
-    updateEditorStatus('Editor mode enabled. Triple-click the ladder again or close this panel to exit.');
-  }
-}
-
-function selectHotspot(id) {
-  appState.selectedId = id;
-  document.querySelectorAll('.hotspot').forEach((el) => {
-    el.classList.toggle('is-selected', el.dataset.hotspotId === id);
-  });
-  updateEditorValues();
-}
-
-function updateEditorStatus(text) {
-  editorStatus.textContent = text;
-}
-
-function updateEditorValues() {
-  const hotspot = getHotspotById(appState.selectedId);
-  if (!hotspot) {
-    editorSelected.textContent = 'No hotspot selected';
-    editorValues.textContent = '';
-    return;
-  }
-  editorSelected.textContent = hotspot.label || hotspot.id;
-  const dotText = typeof hotspot.dotX === 'number' && typeof hotspot.dotY === 'number'
-    ? `\ndotX: ${hotspot.dotX}\ndotY: ${hotspot.dotY}`
-    : '';
-  editorValues.textContent = `id: ${hotspot.id}\nx: ${hotspot.x}\ny: ${hotspot.y}\nwidth: ${hotspot.width}\nheight: ${hotspot.height}${dotText}`;
-}
-
-function stagePointToPercent(clientX, clientY) {
-  const rect = sceneStage.getBoundingClientRect();
-  return {
-    x: clamp(((clientX - rect.left) / rect.width) * 100, 0, 100),
-    y: clamp(((clientY - rect.top) / rect.height) * 100, 0, 100)
-  };
-}
-
-function startHotspotDrag(event, id) {
-  const hotspot = getHotspotById(id);
-  const start = stagePointToPercent(event.clientX, event.clientY);
-  appState.hotspotDrag = {
-    id,
-    pointerId: event.pointerId,
-    startX: start.x,
-    startY: start.y,
-    originalX: hotspot.x,
-    originalY: hotspot.y
-  };
-  event.currentTarget.setPointerCapture(event.pointerId);
-}
-
-function startResizeDrag(event, id) {
-  const hotspot = getHotspotById(id);
-  const start = stagePointToPercent(event.clientX, event.clientY);
-  appState.resizeDrag = {
-    id,
-    pointerId: event.pointerId,
-    startX: start.x,
-    startY: start.y,
-    originalWidth: hotspot.width,
-    originalHeight: hotspot.height
-  };
-  event.currentTarget.parentElement.setPointerCapture(event.pointerId);
-}
-
-function onWindowPointerMove(event) {
-  if (appState.hotspotDrag && event.pointerId === appState.hotspotDrag.pointerId) {
-    const drag = appState.hotspotDrag;
-    const hotspot = getHotspotById(drag.id);
-    const point = stagePointToPercent(event.clientX, event.clientY);
-    hotspot.x = round1(clamp(drag.originalX + point.x - drag.startX, 0, 100 - hotspot.width));
-    hotspot.y = round1(clamp(drag.originalY + point.y - drag.startY, 0, 100 - hotspot.height));
-    applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
-    updateEditorValues();
+    desktopOverlay.hidden = false;
+    app.classList.add('app--desktop-open');
+    if (openDesktopWindows.size === 0 && desktopIcons[0]) {
+      openDesktopWindow(desktopIcons[0]);
+    }
   }
 
-  if (appState.resizeDrag && event.pointerId === appState.resizeDrag.pointerId) {
-    const drag = appState.resizeDrag;
-    const hotspot = getHotspotById(drag.id);
-    const point = stagePointToPercent(event.clientX, event.clientY);
-    hotspot.width = round1(clamp(drag.originalWidth + point.x - drag.startX, 2, 100 - hotspot.x));
-    hotspot.height = round1(clamp(drag.originalHeight + point.y - drag.startY, 2, 100 - hotspot.y));
-    applyHotspotStyle(document.querySelector(`[data-hotspot-id="${drag.id}"]`), hotspot);
-    updateEditorValues();
+  function closeDesktop() {
+    desktopOverlay.hidden = true;
+    app.classList.remove('app--desktop-open');
   }
 
-  if (appState.editorDrag && event.pointerId === appState.editorDrag.pointerId) {
-    const drag = appState.editorDrag;
-    const x = clamp(drag.startLeft + event.clientX - drag.startX, 0, window.innerWidth - editorPanel.offsetWidth);
-    const y = clamp(drag.startTop + event.clientY - drag.startY, 0, window.innerHeight - 42);
-    editorPanel.style.left = `${x}px`;
-    editorPanel.style.top = `${y}px`;
-    editorPanel.style.bottom = 'auto';
+  function renderDesktopIcons() {
+    desktopIconsHost.innerHTML = '';
+
+    desktopIcons.forEach((icon) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'desktop-icon';
+      button.dataset.desktopIconId = icon.id;
+      button.innerHTML = `
+        <span class="desktop-icon__symbol" aria-hidden="true">${escapeHtml(icon.symbol || '□')}</span>
+        <span class="desktop-icon__label">${escapeHtml(icon.label || icon.title || icon.id)}</span>
+      `;
+      button.addEventListener('click', () => openDesktopWindow(icon));
+      desktopIconsHost.appendChild(button);
+    });
   }
-}
 
-function onWindowPointerUp(event) {
-  if (appState.hotspotDrag?.pointerId === event.pointerId) appState.hotspotDrag = null;
-  if (appState.resizeDrag?.pointerId === event.pointerId) appState.resizeDrag = null;
-  if (appState.editorDrag?.pointerId === event.pointerId) appState.editorDrag = null;
-}
+  function openDesktopWindow(icon) {
+    const existing = openDesktopWindows.get(icon.id);
+    if (existing) {
+      existing.windowEl.classList.remove('is-minimized');
+      focusDesktopWindow(icon.id);
+      updateTaskbar();
+      return;
+    }
 
-function exportDataJs() {
-  const content = `window.FEISK_ASSETS = ${JSON.stringify(ACTIVE_ASSETS, null, 2)};\nwindow.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;\n`;
-  const blob = new Blob([content], { type: 'text/javascript' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'data.js';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  updateEditorStatus('Downloaded data.js. Replace the file in your repo with this version.');
-}
+    const windowEl = document.createElement('article');
+    const offset = openDesktopWindows.size * 24;
+    const startLeft = Math.min(210 + offset, 430);
+    const startTop = Math.min(32 + offset, 210);
 
-function copyPlacement() {
-  const hotspot = getHotspotById(appState.selectedId);
-  if (!hotspot) return;
-  const text = `x: ${hotspot.x}, y: ${hotspot.y}, width: ${hotspot.width}, height: ${hotspot.height}`;
-  navigator.clipboard?.writeText(text);
-  updateEditorStatus('Placement copied.');
-}
+    windowEl.className = 'desktop-window';
+    windowEl.dataset.windowId = icon.id;
+    windowEl.style.left = `${startLeft}px`;
+    windowEl.style.top = `${startTop}px`;
+    windowEl.style.zIndex = String(++desktopZ);
+    windowEl.innerHTML = `
+      <header class="desktop-window__bar">
+        <span class="desktop-window__title">${escapeHtml(icon.label || icon.title || icon.id)}</span>
+        <span class="desktop-window__buttons">
+          <button class="desktop-window__minimise" type="button" aria-label="Minimise window">–</button>
+          <button class="desktop-window__close" type="button" aria-label="Close window">×</button>
+        </span>
+      </header>
+      <div class="desktop-window__content">
+        <p class="desktop-window__kicker">${escapeHtml(icon.kicker || 'Archive File')}</p>
+        <h3>${escapeHtml(icon.title || icon.label || icon.id)}</h3>
+        <p>${escapeHtml(icon.body || '')}</p>
+      </div>
+    `;
 
-function resetPlacement() {
-  hotspots.splice(0, hotspots.length, ...originalHotspots.map((h) => ({ ...h })));
-  renderHotspots();
-  selectHotspot(hotspots[0]?.id);
-  updateEditorStatus('Placement reset.');
-}
+    const record = { icon, windowEl, minimized: false };
+    openDesktopWindows.set(icon.id, record);
+    desktopWindowLayer.appendChild(windowEl);
 
-function startEditorDrag(event) {
-  if (event.target.closest('button')) return;
-  const rect = editorPanel.getBoundingClientRect();
-  appState.editorDrag = {
-    pointerId: event.pointerId,
-    startX: event.clientX,
-    startY: event.clientY,
-    startLeft: rect.left,
-    startTop: rect.top
-  };
-  editorHeader.setPointerCapture(event.pointerId);
-}
+    windowEl.addEventListener('pointerdown', () => focusDesktopWindow(icon.id));
+    windowEl.querySelector('.desktop-window__bar').addEventListener('pointerdown', (event) => startDesktopWindowDrag(event, icon.id));
+    windowEl.querySelector('.desktop-window__minimise').addEventListener('click', () => minimiseDesktopWindow(icon.id));
+    windowEl.querySelector('.desktop-window__close').addEventListener('click', () => closeDesktopWindow(icon.id));
 
-function bindEvents() {
-  closePanelButton.addEventListener('click', closeInfoPanel);
-  panelBackdrop.addEventListener('click', closeInfoPanel);
-  editLadderHotspot.addEventListener('click', handleLadderTripleClick);
+    focusDesktopWindow(icon.id);
+    updateTaskbar();
+  }
 
-  sceneViewport.addEventListener('pointerdown', onViewportPointerDown);
-  sceneViewport.addEventListener('pointermove', onViewportPointerMove);
-  sceneViewport.addEventListener('pointerup', onViewportPointerUp);
-  sceneViewport.addEventListener('pointercancel', onViewportPointerUp);
+  function focusDesktopWindow(id) {
+    const record = openDesktopWindows.get(id);
+    if (!record) return;
+    record.windowEl.style.zIndex = String(++desktopZ);
+    document.querySelectorAll('.desktop-icon').forEach((node) => {
+      node.classList.toggle('is-selected', node.dataset.desktopIconId === id);
+    });
+    updateTaskbar(id);
+  }
 
-  editorCloseButton.addEventListener('click', () => toggleEditorMode(false));
-  editorMinimiseButton.addEventListener('click', () => editorPanel.classList.toggle('is-minimised'));
-  editorHeader.addEventListener('pointerdown', startEditorDrag);
-  editorCopyButton.addEventListener('click', copyPlacement);
-  editorDownloadButton.addEventListener('click', exportDataJs);
-  editorResetButton.addEventListener('click', resetPlacement);
+  function minimiseDesktopWindow(id) {
+    const record = openDesktopWindows.get(id);
+    if (!record) return;
+    record.minimized = true;
+    record.windowEl.classList.add('is-minimized');
+    updateTaskbar();
+  }
 
-  window.addEventListener('pointermove', onWindowPointerMove);
-  window.addEventListener('pointerup', onWindowPointerUp);
-  window.addEventListener('resize', () => {
-    updateStageSize();
-    showRotatePromptIfNeeded();
-  });
-  window.addEventListener('orientationchange', () => {
-    setTimeout(() => {
-      appState.hasUserPanned = false;
-      appState.didInitialPortraitCenter = false;
-      updateStageSize();
-      centerPanOnce();
-      showRotatePromptIfNeeded();
-    }, 250);
-  });
+  function closeDesktopWindow(id) {
+    const record = openDesktopWindows.get(id);
+    if (!record) return;
+    record.windowEl.remove();
+    openDesktopWindows.delete(id);
+    document.querySelectorAll('.desktop-icon').forEach((node) => {
+      if (node.dataset.desktopIconId === id) node.classList.remove('is-selected');
+    });
+    updateTaskbar();
+  }
 
-  computerCloseButton.addEventListener('click', closeComputerOverlay);
-  computerOverlay.addEventListener('click', (event) => {
-    if (event.target === computerOverlay) closeComputerOverlay();
-  });
-  forceRotateButton.addEventListener('click', forceRotate);
-  continuePortraitButton.addEventListener('click', continuePortrait);
+  function updateTaskbar(activeId = null) {
+    desktopTaskList.innerHTML = '';
+    openDesktopWindows.forEach((record, id) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'desktop-task-button';
+      button.textContent = record.icon.label || record.icon.title || id;
+      button.classList.toggle('is-active', id === activeId && !record.minimized);
+      button.addEventListener('click', () => {
+        record.minimized = false;
+        record.windowEl.classList.remove('is-minimized');
+        focusDesktopWindow(id);
+      });
+      desktopTaskList.appendChild(button);
+    });
+  }
 
-  window.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    if (appState.computerOpen) closeComputerOverlay();
-    else if (appState.editorMode) toggleEditorMode(false);
-    else if (appState.panelOpen) closeInfoPanel();
-  });
-}
+  function startDesktopWindowDrag(event, id) {
+    if (event.button !== undefined && event.button !== 0) return;
+    const record = openDesktopWindows.get(id);
+    if (!record) return;
+    event.preventDefault();
+    focusDesktopWindow(id);
 
-function boot() {
-  renderBackground();
-  renderHotspots();
-  renderComputerIcons();
-  createDustParticles();
-  bindEvents();
-  enterBunkerDirectly();
-  preloadAssets().catch(() => {
-    appState.loaded = true;
-  });
-}
+    const rect = record.windowEl.getBoundingClientRect();
+    const layerRect = desktopWindowLayer.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = rect.left - layerRect.left;
+    const startTop = rect.top - layerRect.top;
 
-window.addEventListener('DOMContentLoaded', boot);
+    const onMove = (moveEvent) => {
+      const maxLeft = Math.max(0, layerRect.width - rect.width);
+      const maxTop = Math.max(0, layerRect.height - rect.height);
+      const nextLeft = clamp(startLeft + moveEvent.clientX - startX, 0, maxLeft);
+      const nextTop = clamp(startTop + moveEvent.clientY - startY, 0, maxTop);
+      record.windowEl.style.left = `${nextLeft}px`;
+      record.windowEl.style.top = `${nextTop}px`;
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+    window.addEventListener('pointercancel', onUp, { once: true });
+  }
+
+  function toggleEditor(forceState) {
+    editorOpen = typeof forceState === 'boolean' ? forceState : !editorOpen;
+    editorPanel.hidden = !editorOpen;
+    selectedHotspotId = editorOpen ? (selectedHotspotId || hotspots[0]?.id || null) : null;
+    updateEditorFromSelection();
+    renderHotspots();
+  }
+
+  function selectHotspot(id) {
+    selectedHotspotId = id;
+    updateEditorFromSelection();
+    renderHotspots();
+  }
+
+  function updateEditorFromSelection() {
+    const item = getHotspotById(selectedHotspotId);
+    editorSelectedTitle.textContent = item ? item.label || item.title || item.id : 'No hotspot selected';
+    Object.values(editorFields).forEach((input) => {
+      input.disabled = !item;
+    });
+    if (!item) return;
+    editorFields.x.value = item.x;
+    editorFields.y.value = item.y;
+    editorFields.width.value = item.width;
+    editorFields.height.value = item.height;
+    editorFields.dotX.value = item.dotX;
+    editorFields.dotY.value = item.dotY;
+  }
+
+  function applyEditorField(fieldName, value) {
+    const item = getHotspotById(selectedHotspotId);
+    if (!item) return;
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+
+    if (fieldName === 'width' || fieldName === 'height') {
+      item[fieldName] = clamp(round1(numericValue), 1, 100);
+    } else {
+      item[fieldName] = clamp(round1(numericValue), 0, 100);
+    }
+
+    item.x = clamp(item.x, 0, 100 - item.width);
+    item.y = clamp(item.y, 0, 100 - item.height);
+    item.dotX = clamp(item.dotX, 0, 100);
+    item.dotY = clamp(item.dotY, 0, 100);
+    renderHotspots();
+  }
+
+  function startHotspotEditDrag(event, id) {
+    const item = getHotspotById(id);
+    if (!item) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectHotspot(id);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const stageRect = document.getElementById('sceneStage').getBoundingClientRect();
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
+    const isResize = localX > rect.width - 22 && localY > rect.height - 22;
+    const dotPercent = localDotPercent(item);
+    const dotPxX = (dotPercent.x / 100) * rect.width;
+    const dotPxY = (dotPercent.y / 100) * rect.height;
+    const dotDistance = Math.hypot(localX - dotPxX, localY - dotPxY);
+    const isDotMove = dotDistance < 28;
+
+    const start = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      dotX: item.dotX,
+      dotY: item.dotY
+    };
+
+    const onMove = (moveEvent) => {
+      const dx = ((moveEvent.clientX - start.clientX) / stageRect.width) * 100;
+      const dy = ((moveEvent.clientY - start.clientY) / stageRect.height) * 100;
+
+      if (isDotMove && !isResize) {
+        item.dotX = clamp(round1(start.dotX + dx), 0, 100);
+        item.dotY = clamp(round1(start.dotY + dy), 0, 100);
+      } else if (isResize) {
+        item.width = clamp(round1(start.width + dx), 1, 100 - item.x);
+        item.height = clamp(round1(start.height + dy), 1, 100 - item.y);
+      } else {
+        item.x = clamp(round1(start.x + dx), 0, 100 - item.width);
+        item.y = clamp(round1(start.y + dy), 0, 100 - item.height);
+        item.dotX = clamp(round1(start.dotX + dx), 0, 100);
+        item.dotY = clamp(round1(start.dotY + dy), 0, 100);
+      }
+
+      renderHotspots();
+      updateEditorFromSelection();
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+    window.addEventListener('pointercancel', onUp, { once: true });
+  }
+
+  function startEditorPanelDrag(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    const rect = editorPanel.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = rect.left;
+    const startTop = rect.top;
+
+    const onMove = (moveEvent) => {
+      const nextLeft = clamp(startLeft + moveEvent.clientX - startX, 0, window.innerWidth - rect.width);
+      const nextTop = clamp(startTop + moveEvent.clientY - startY, 0, window.innerHeight - rect.height);
+      editorPanel.style.left = `${nextLeft}px`;
+      editorPanel.style.top = `${nextTop}px`;
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, { once: true });
+    window.addEventListener('pointercancel', onUp, { once: true });
+  }
+
+  function generateDataFile() {
+    const cleanConfig = {
+      scene: config.scene || { background: 'assets/backgrounds/bunker-room-final.png', aspectRatio: 16 / 9 },
+      hotspots,
+      desktopIcons
+    };
+
+    return `/* Feisk Productions Vault data */\n\nwindow.FEISK_CONFIG = ${JSON.stringify(cleanConfig, null, 2)};\n`;
+  }
+
+  function downloadDataFile() {
+    const blob = new Blob([generateDataFile()], { type: 'text/javascript;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'data.js';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function copyPlacementToClipboard() {
+    const item = getHotspotById(selectedHotspotId);
+    if (!item) return;
+    const text = JSON.stringify({
+      id: item.id,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      dotX: item.dotX,
+      dotY: item.dotY
+    }, null, 2);
+    navigator.clipboard?.writeText(text).catch(() => undefined);
+  }
+
+  function resetPlacementValues() {
+    window.location.reload();
+  }
+
+  function bindEvents() {
+    panelClose.addEventListener('click', closeInfoPanel);
+    panelBackdrop.addEventListener('click', closeInfoPanel);
+    desktopClose.addEventListener('click', closeDesktop);
+    desktopStart.addEventListener('click', () => {
+      if (desktopIcons[0]) openDesktopWindow(desktopIcons[0]);
+    });
+
+    ladderTrigger.addEventListener('click', () => {
+      ladderClickCount += 1;
+      ladderTrigger.classList.add('edit-ladder-hotspot--ping');
+      window.clearTimeout(ladderClickTimer);
+      ladderClickTimer = window.setTimeout(() => {
+        ladderClickCount = 0;
+        ladderTrigger.classList.remove('edit-ladder-hotspot--ping');
+      }, 700);
+
+      if (ladderClickCount >= 3) {
+        ladderClickCount = 0;
+        ladderTrigger.classList.remove('edit-ladder-hotspot--ping');
+        toggleEditor();
+      }
+    });
+
+    editorClose.addEventListener('click', () => toggleEditor(false));
+    editorMinimise.addEventListener('click', () => {
+      editorPanel.classList.add('is-minimised');
+      editorBody.hidden = true;
+      editorRestore.hidden = false;
+    });
+    editorRestore.addEventListener('click', () => {
+      editorPanel.classList.remove('is-minimised');
+      editorBody.hidden = false;
+      editorRestore.hidden = true;
+    });
+    editorDragHandle.addEventListener('pointerdown', startEditorPanelDrag);
+
+    Object.entries(editorFields).forEach(([fieldName, input]) => {
+      input.addEventListener('input', () => applyEditorField(fieldName, input.value));
+    });
+
+    copyPlacement.addEventListener('click', copyPlacementToClipboard);
+    downloadData.addEventListener('click', downloadDataFile);
+    resetPlacement.addEventListener('click', resetPlacementValues);
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (!desktopOverlay.hidden) closeDesktop();
+        else if (!infoPanel.hidden) closeInfoPanel();
+        else if (editorOpen) toggleEditor(false);
+      }
+    });
+  }
+
+  function init() {
+    setSceneBackground();
+    renderHotspots();
+    renderDesktopIcons();
+    renderDust();
+    bindEvents();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

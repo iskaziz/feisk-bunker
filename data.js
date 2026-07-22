@@ -1,182 +1,178 @@
-window.FEISK_ASSETS = {
-  backgrounds: {
-    bunkerRoom: 'assets/backgrounds/bunker-room-final.png',
-    loadingPortrait: 'assets/backgrounds/loading-jungle-portrait.png',
-    loadingLandscape: 'assets/backgrounds/loading-jungle-landscape.png'
+/*
+  Feisk Productions Vault data
+  - x, y, width, height are invisible click/tap areas as percentages of the bunker image.
+  - dotX and dotY are the visible pulsing dot position as percentages of the bunker image.
+  - Keep text in template literals to avoid broken raw string line breaks.
+*/
+
+window.FEISK_CONFIG = {
+  scene: {
+    background: 'assets/backgrounds/bunker-room-final.png',
+    aspectRatio: 16 / 9
   },
+
   hotspots: [
     {
       id: 'filing-cabinet',
-      label: 'Filing Cabinet',
-      title: 'Production Filing Cabinet',
-      kicker: 'Company Records',
-      body: 'Feisk Sdn Bhd was founded in December 2010 by brothers Iskander and Feisal Azizuddin.\n\nThese drawers hold the paper trail: call sheets, scripts, grant notes, festival submissions, invoices and old production maps.',
-      x: 3.4,
-      y: 30.5,
-      width: 8.8,
-      height: 47.0,
-      dotX: 7.8,
-      dotY: 49.0
+      label: 'Records',
+      title: 'Company Records',
+      kicker: 'Feisk Archive',
+      x: 3.2,
+      y: 27.8,
+      width: 8.6,
+      height: 48.6,
+      dotX: 9.3,
+      dotY: 48.8,
+      body: `A locked cabinet of production records, release notes and archived material from Feisk Productions.
+
+This is where visitors can discover the company history, past work and the foundation of the Feisk archive.`
     },
     {
       id: 'wall-safe',
-      label: 'Wall Safe',
-      title: 'Locked Development Safe',
+      label: 'Slate',
+      title: 'Development Slate',
       kicker: 'In Development',
-      body: 'The safe stores restricted files for Feisk projects and unreleased materials.\n\nCurrent archive notes include crime thriller Curi Makan, fantasy thriller Writers, desktop thriller Send Tudes, and satay-western Selendangs & Shotguns.',
-      x: 20.2,
-      y: 35.6,
-      width: 10.1,
-      height: 20.2,
-      dotX: 25.6,
-      dotY: 46.0
-    },
-    {
-      id: 'lcd-monitors',
-      label: 'Screen Array',
-      title: 'Feisk Screen Array',
-      kicker: 'Films / Platforms',
-      body: 'Feisk Productions has produced content for film, television and digital platforms.\n\nThe monitors act as the bunker interface for trailers, stills, platform notes and release records.',
-      x: 36.5,
-      y: 25.7,
-      width: 20.4,
-      height: 25.8,
-      dotX: 46.9,
-      dotY: 38.2
+      x: 20.8,
+      y: 31.2,
+      width: 10.3,
+      height: 22.4,
+      dotX: 26.0,
+      dotY: 41.4,
+      body: `The safe contains projects in development and post-production.
+
+Feisk currently lists several upcoming feature projects, including Curi Makan, Writers, Send Tudes and Selendangs & Shotguns.`
     },
     {
       id: 'old-desktop-computer',
       label: 'Terminal',
-      title: 'Old Desktop Computer',
-      kicker: 'Main Terminal',
-      body: 'The bunker terminal opens the main interactive archive: films, biographies, project windows, hidden folders and contact access.',
-      x: 41.7,
-      y: 51.0,
-      width: 16.0,
-      height: 15.8,
-      dotX: 48.0,
-      dotY: 58.0
+      title: 'Feisk Terminal',
+      kicker: 'Desktop Access',
+      x: 38.9,
+      y: 39.8,
+      width: 17.8,
+      height: 28.2,
+      dotX: 45.6,
+      dotY: 53.4,
+      action: 'computer',
+      body: `The old desktop terminal opens the Feisk archive operating system.`
     },
     {
       id: 'rotary-telephone',
-      label: 'Telephone',
-      title: 'Rotary Telephone',
-      kicker: 'Contact Line',
-      body: 'A direct line to the surface.\n\nFeisk can be reached at get.creative@feisk.com.my for production enquiries, collaborations and archive access.',
-      x: 31.0,
-      y: 55.1,
-      width: 7.3,
-      height: 10.1,
-      dotX: 34.5,
-      dotY: 60.1
-    },
-    {
-      id: 'swivel-desk-chair',
-      label: 'Chair',
-      title: 'Swivel Desk Chair',
-      kicker: "The Producers' Seat",
-      body: 'Iskander Azizuddin is a Malaysian film producer with more than 15 years of creative and media industry experience.\n\nFeisal Azizuddin is a filmmaker whose short films often explore Malaysian social issues through horror, thriller and dramatic forms.',
-      x: 37.1,
-      y: 61.0,
-      width: 13.1,
-      height: 26.4,
-      dotX: 43.6,
-      dotY: 73.0
-    },
-    {
-      id: 'bookshelf',
-      label: 'Bookshelf',
-      title: 'Research Bookshelf',
-      kicker: 'Reference Archive',
-      body: 'A shelf of cinema books, treatment binders, research notes, festival catalogues, short-film references and odd props collected across years of independent production work.',
-      x: 62.0,
-      y: 22.8,
-      width: 15.1,
-      height: 56.4,
-      dotX: 69.3,
-      dotY: 43.8
-    },
-    {
-      id: 'white-fluffy-rug',
-      label: 'Rug',
-      title: 'White Fluffy Rug',
-      kicker: 'Festival Clue',
-      body: 'A strange soft patch in an otherwise hard concrete room.\n\nHidden beneath it: a reminder that Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.',
-      x: 13.4,
-      y: 75.0,
-      width: 59.5,
-      height: 20.8,
-      dotX: 44.3,
-      dotY: 85.2
-    },
-    {
-      id: 'vault-door',
-      label: 'Vault Door',
-      title: 'Vault Door',
-      kicker: 'Restricted Exit',
-      body: 'The heavy vault door leads deeper into the Feisk archive.\n\nFuture versions can use this as navigation to another room or hidden page.',
-      x: 80.0,
-      y: 24.8,
-      width: 15.0,
-      height: 52.2,
-      dotX: 84.8,
-      dotY: 47.8
+      label: 'Contact',
+      title: 'Direct Line',
+      kicker: 'Contact',
+      x: 29.0,
+      y: 51.0,
+      width: 8.4,
+      height: 10.2,
+      dotX: 33.5,
+      dotY: 56.0,
+      body: `The rotary telephone connects to Feisk Productions.
+
+Email: get.creative@feisk.com.my`
     },
     {
       id: 'tikus-book',
-      label: 'Tikus Book',
+      label: 'Tikus',
       title: 'Tikus',
       kicker: 'Hidden Project File',
-      body: 'A partly hidden medieval book marked Tikus sits on the foreground shelf.\n\nThis can link visitors into the Tikus project archive, microsite, trailer, or interactive evidence room.',
-      x: 0.2,
-      y: 78.0,
-      width: 23.5,
-      height: 22.0,
-      dotX: 12.2,
-      dotY: 90.6
+      x: 0.4,
+      y: 76.8,
+      width: 23.6,
+      height: 22.8,
+      dotX: 12.5,
+      dotY: 90.6,
+      body: `A medieval-looking project book sits partly off-screen.
+
+This hotspot can be used for the Tikus microsite, hidden film materials, behind-the-scenes extras, or a special archive branch.`
+    },
+    {
+      id: 'vault-door',
+      label: 'Vault',
+      title: 'Vault Door',
+      kicker: 'Deep Archive',
+      x: 77.0,
+      y: 17.8,
+      width: 12.0,
+      height: 56.6,
+      dotX: 83.2,
+      dotY: 43.3,
+      body: `The heavy vault door leads deeper into the Feisk archive.
+
+Future versions can use this as navigation to another room, a films section, or a secret archive level.`
     }
   ],
-  computerIcons: [
+
+  desktopIcons: [
     {
-      id: 'about',
-      icon: '▣',
+      id: 'about-feisk',
       label: 'About Feisk',
-      kicker: 'Archive File',
+      symbol: 'F',
       title: 'About Feisk Productions',
-      body: 'Founded in December 2010 by Iskander and Feisal Azizuddin, Feisk Productions creates film, television and digital content from Malaysia.'
+      kicker: 'Company File',
+      body: `Feisk Sdn Bhd was founded in December 2010 by brothers Iskander and Feisal Azizuddin.
+
+The company creates content for film, television and digital platforms.`
     },
     {
-      id: 'films',
-      icon: '◈',
+      id: 'feature-films',
       label: 'Feature Films',
-      kicker: 'Screen Records',
-      title: 'Films / Platforms',
-      body: 'Feisk has produced and distributed work connected to platforms including Netflix, Amazon Prime, VIU, Astro and Tubi.'
+      symbol: '🎞',
+      title: 'Feature Films',
+      kicker: 'Film Archive',
+      body: `Feisk has feature films connected to platforms including Netflix, Amazon Prime, VIU, Astro and Tubi.
+
+Use this window later as a browsable catalogue with posters, trailers, synopses and platform links.`
     },
     {
-      id: 'shorts',
-      icon: '◎',
+      id: 'short-films',
       label: 'Short Films',
-      kicker: 'Festival File',
-      title: 'Can You Love Me Most?',
-      body: 'Can You Love Me Most? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.'
+      symbol: '▣',
+      title: 'Notable Short Films',
+      kicker: 'Festival Archive',
+      body: `Feisk regularly produces short films, mainly in the horror and thriller genre.
+
+CAN YOU LOVE ME MOST? won Best Short Film at the 32nd Festival Filem Malaysia in 2022.`
     },
     {
-      id: 'slate',
-      icon: '◇',
-      label: 'Development Slate',
-      kicker: 'Restricted',
-      title: 'Projects In Development',
-      body: 'Current bunker notes include Curi Makan, Writers, Send Tudes, and Selendangs & Shotguns.'
+      id: 'development-slate',
+      label: 'Development',
+      symbol: '✦',
+      title: 'Development Slate',
+      kicker: 'Locked Projects',
+      body: `Current projects listed by Feisk include Curi Makan, Writers, Send Tudes and Selendangs & Shotguns.
+
+This folder can become a teaser area for future releases.`
     },
     {
-      id: 'contact',
-      icon: '✉',
+      id: 'iskander-file',
+      label: 'Iskander',
+      symbol: 'I',
+      title: 'Iskander Azizuddin',
+      kicker: 'Producer Profile',
+      body: `Iskander is a Malaysian film producer with over 15 years of experience in the creative and media industry.
+
+His projects have been presented at markets and labs including Asian Film Market, Singapore's Southeast Asian Film Financing Forum and Luang Prabang Talent Lab.`
+    },
+    {
+      id: 'feisal-file',
+      label: 'Feisal',
+      symbol: 'A',
+      title: 'Feisal Azizuddin',
+      kicker: 'Filmmaker Profile',
+      body: `Feisal is a Malaysian filmmaker whose short films often explore social issues in Malaysia.
+
+His work has screened at festivals including Jogja-NETPAC Asian Film Festival, Monterrey International Film Festival, Bangkok ASEAN Film Festival, Mini Film Festival, Kinosaurus Jakarta and George Town Festival.`
+    },
+    {
+      id: 'contact-file',
       label: 'Contact',
-      kicker: 'Surface Line',
-      title: 'Contact Feisk',
-      body: 'Production enquiries and collaborations: get.creative@feisk.com.my'
+      symbol: '@',
+      title: 'Contact',
+      kicker: 'Transmission Line',
+      body: `Connect with Feisk Productions:
+
+get.creative@feisk.com.my`
     }
   ]
 };
-window.FEISK_HOTSPOTS = window.FEISK_ASSETS.hotspots;
