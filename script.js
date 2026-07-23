@@ -22,8 +22,6 @@
   const desktopClose = document.getElementById('desktopClose');
   const desktopIconsHost = document.getElementById('desktopIcons');
   const desktopWindowLayer = document.getElementById('desktopWindowLayer');
-  const desktopTaskList = document.getElementById('desktopTaskList');
-  const desktopStart = document.getElementById('desktopStart');
 
   const editorPanel = document.getElementById('placementEditor');
   const editorDragHandle = document.getElementById('editorDragHandle');
@@ -49,8 +47,7 @@
   let ladderClickCount = 0;
   let ladderClickTimer = null;
 
-  let desktopZ = 10;
-  const openDesktopWindows = new Map();
+  let currentDesktopWindow = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -198,7 +195,7 @@
     closeInfoPanel();
     desktopOverlay.hidden = false;
     app.classList.add('app--desktop-open');
-    if (openDesktopWindows.size === 0 && desktopIcons[0]) {
+    if (!currentDesktopWindow && desktopIcons[0]) {
       openDesktopWindow(desktopIcons[0]);
     }
   }
@@ -206,12 +203,13 @@
   function closeDesktop() {
     desktopOverlay.hidden = true;
     app.classList.remove('app--desktop-open');
+    clearDesktopWindow();
   }
 
   function renderDesktopIcons() {
     desktopIconsHost.innerHTML = '';
 
-    desktopIcons.forEach((icon) => {
+    desktopIcons.forEach((icon, index) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'desktop-icon';
@@ -221,36 +219,32 @@
         <span class="desktop-icon__label">${escapeHtml(icon.label || icon.title || icon.id)}</span>
       `;
       button.addEventListener('click', () => openDesktopWindow(icon));
+      if (index === 0) button.classList.add('is-selected');
       desktopIconsHost.appendChild(button);
     });
   }
 
+  function clearDesktopWindow() {
+    desktopWindowLayer.innerHTML = '';
+    currentDesktopWindow = null;
+    document.querySelectorAll('.desktop-icon').forEach((node) => node.classList.remove('is-selected'));
+  }
+
   function openDesktopWindow(icon) {
-    const existing = openDesktopWindows.get(icon.id);
-    if (existing) {
-      existing.windowEl.classList.remove('is-minimized');
-      focusDesktopWindow(icon.id);
-      updateTaskbar();
-      return;
-    }
+    desktopWindowLayer.innerHTML = '';
+
+    document.querySelectorAll('.desktop-icon').forEach((node) => {
+      node.classList.toggle('is-selected', node.dataset.desktopIconId === icon.id);
+    });
 
     const windowEl = document.createElement('article');
-    const offset = openDesktopWindows.size * 24;
-    const startLeft = Math.min(210 + offset, 430);
-    const startTop = Math.min(32 + offset, 210);
-
-    windowEl.className = 'desktop-window';
+    windowEl.className = 'desktop-window desktop-window--single';
     windowEl.dataset.windowId = icon.id;
-    windowEl.style.left = `${startLeft}px`;
-    windowEl.style.top = `${startTop}px`;
-    windowEl.style.zIndex = String(++desktopZ);
     windowEl.innerHTML = `
       <header class="desktop-window__bar">
+        <span class="desktop-window__led" aria-hidden="true"></span>
         <span class="desktop-window__title">${escapeHtml(icon.label || icon.title || icon.id)}</span>
-        <span class="desktop-window__buttons">
-          <button class="desktop-window__minimise" type="button" aria-label="Minimise window">–</button>
-          <button class="desktop-window__close" type="button" aria-label="Close window">×</button>
-        </span>
+        <button class="desktop-window__close" type="button" aria-label="Close current archive file">×</button>
       </header>
       <div class="desktop-window__content">
         <p class="desktop-window__kicker">${escapeHtml(icon.kicker || 'Archive File')}</p>
@@ -259,97 +253,9 @@
       </div>
     `;
 
-    const record = { icon, windowEl, minimized: false };
-    openDesktopWindows.set(icon.id, record);
+    currentDesktopWindow = { icon, windowEl };
     desktopWindowLayer.appendChild(windowEl);
-
-    windowEl.addEventListener('pointerdown', () => focusDesktopWindow(icon.id));
-    windowEl.querySelector('.desktop-window__bar').addEventListener('pointerdown', (event) => startDesktopWindowDrag(event, icon.id));
-    windowEl.querySelector('.desktop-window__minimise').addEventListener('click', () => minimiseDesktopWindow(icon.id));
-    windowEl.querySelector('.desktop-window__close').addEventListener('click', () => closeDesktopWindow(icon.id));
-
-    focusDesktopWindow(icon.id);
-    updateTaskbar();
-  }
-
-  function focusDesktopWindow(id) {
-    const record = openDesktopWindows.get(id);
-    if (!record) return;
-    record.windowEl.style.zIndex = String(++desktopZ);
-    document.querySelectorAll('.desktop-icon').forEach((node) => {
-      node.classList.toggle('is-selected', node.dataset.desktopIconId === id);
-    });
-    updateTaskbar(id);
-  }
-
-  function minimiseDesktopWindow(id) {
-    const record = openDesktopWindows.get(id);
-    if (!record) return;
-    record.minimized = true;
-    record.windowEl.classList.add('is-minimized');
-    updateTaskbar();
-  }
-
-  function closeDesktopWindow(id) {
-    const record = openDesktopWindows.get(id);
-    if (!record) return;
-    record.windowEl.remove();
-    openDesktopWindows.delete(id);
-    document.querySelectorAll('.desktop-icon').forEach((node) => {
-      if (node.dataset.desktopIconId === id) node.classList.remove('is-selected');
-    });
-    updateTaskbar();
-  }
-
-  function updateTaskbar(activeId = null) {
-    desktopTaskList.innerHTML = '';
-    openDesktopWindows.forEach((record, id) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'desktop-task-button';
-      button.textContent = record.icon.label || record.icon.title || id;
-      button.classList.toggle('is-active', id === activeId && !record.minimized);
-      button.addEventListener('click', () => {
-        record.minimized = false;
-        record.windowEl.classList.remove('is-minimized');
-        focusDesktopWindow(id);
-      });
-      desktopTaskList.appendChild(button);
-    });
-  }
-
-  function startDesktopWindowDrag(event, id) {
-    if (event.button !== undefined && event.button !== 0) return;
-    const record = openDesktopWindows.get(id);
-    if (!record) return;
-    event.preventDefault();
-    focusDesktopWindow(id);
-
-    const rect = record.windowEl.getBoundingClientRect();
-    const layerRect = desktopWindowLayer.getBoundingClientRect();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const startLeft = rect.left - layerRect.left;
-    const startTop = rect.top - layerRect.top;
-
-    const onMove = (moveEvent) => {
-      const maxLeft = Math.max(0, layerRect.width - rect.width);
-      const maxTop = Math.max(0, layerRect.height - rect.height);
-      const nextLeft = clamp(startLeft + moveEvent.clientX - startX, 0, maxLeft);
-      const nextTop = clamp(startTop + moveEvent.clientY - startY, 0, maxTop);
-      record.windowEl.style.left = `${nextLeft}px`;
-      record.windowEl.style.top = `${nextTop}px`;
-    };
-
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp, { once: true });
-    window.addEventListener('pointercancel', onUp, { once: true });
+    windowEl.querySelector('.desktop-window__close').addEventListener('click', clearDesktopWindow);
   }
 
   function toggleEditor(forceState) {
@@ -533,9 +439,6 @@
     panelClose.addEventListener('click', closeInfoPanel);
     panelBackdrop.addEventListener('click', closeInfoPanel);
     desktopClose.addEventListener('click', closeDesktop);
-    desktopStart.addEventListener('click', () => {
-      if (desktopIcons[0]) openDesktopWindow(desktopIcons[0]);
-    });
 
     ladderTrigger.addEventListener('click', () => {
       ladderClickCount += 1;
