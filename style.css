@@ -7,7 +7,7 @@
   --color-warning: #d7b25a;
   --color-green: #7bf0b1;
   --color-panel: rgba(8, 13, 15, 0.95);
-  --scene-ratio: 1.7777777778;
+  --scene-ratio: 0.5627990431;
   --font-ui: 'Trebuchet MS', Verdana, Arial, sans-serif;
 }
 
@@ -69,7 +69,7 @@ button {
   position: relative;
   width: min(100vw, calc(100dvh * var(--scene-ratio)));
   height: min(100dvh, calc(100vw / var(--scene-ratio)));
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--scene-ratio);
   overflow: hidden;
   user-select: none;
   box-shadow: 0 0 70px rgba(0, 0, 0, 0.72);
@@ -96,8 +96,9 @@ button {
   position: absolute;
   inset: -8%;
   background:
-    radial-gradient(circle at 20% 8%, rgba(185, 220, 255, 0.22), transparent 20%),
-    radial-gradient(circle at 46% 43%, rgba(255, 226, 160, 0.10), transparent 28%),
+    radial-gradient(circle at 15% 8%, rgba(185, 220, 255, 0.20), transparent 18%),
+    radial-gradient(circle at 25% 66%, rgba(255, 224, 142, 0.12), transparent 18%),
+    radial-gradient(circle at 52% 32%, rgba(255, 226, 160, 0.08), transparent 20%),
     linear-gradient(180deg, rgba(255, 236, 180, 0.035), transparent 36%, rgba(0,0,0,0.18));
   mix-blend-mode: screen;
   opacity: 0.52;
@@ -264,10 +265,10 @@ button {
 
 .edit-ladder-hotspot {
   position: absolute;
-  left: 12.5%;
-  top: 4%;
-  width: 7.5%;
-  height: 64%;
+  left: 8.5%;
+  top: 3%;
+  width: 13%;
+  height: 86%;
   z-index: 22;
   padding: 0;
   border: 0;

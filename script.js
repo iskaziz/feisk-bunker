@@ -62,6 +62,12 @@
   }
 
   function setSceneBackground() {
+    if (config.scene && Number.isFinite(config.scene.aspectRatio)) {
+      document.documentElement.style.setProperty('--scene-ratio', String(config.scene.aspectRatio));
+      const stage = document.getElementById('sceneStage');
+      if (stage) stage.style.aspectRatio = String(config.scene.aspectRatio);
+    }
+
     if (config.scene && config.scene.background) {
       backgroundImage.src = config.scene.background;
     }
@@ -396,7 +402,7 @@
 
   function generateDataFile() {
     const cleanConfig = {
-      scene: config.scene || { background: 'assets/backgrounds/bunker-room-final.png', aspectRatio: 16 / 9 },
+      scene: config.scene || { background: 'assets/backgrounds/bunker-room-final.png', aspectRatio: 941 / 1672 },
       hotspots,
       desktopIcons
     };

@@ -2,43 +2,28 @@
   Feisk Productions Vault data
   - x, y, width, height are invisible click/tap areas as percentages of the bunker image.
   - dotX and dotY are the visible pulsing dot position as percentages of the bunker image.
-  - Keep text in template literals to avoid broken raw string line breaks.
+  - The current bunker background is a two-floor portrait image: 941 × 1672.
 */
 
 window.FEISK_CONFIG = {
   scene: {
     background: 'assets/backgrounds/bunker-room-final.png',
-    aspectRatio: 16 / 9
+    aspectRatio: 941 / 1672
   },
 
   hotspots: [
-    {
-      id: 'filing-cabinet',
-      label: 'Records',
-      title: 'Company Records',
-      kicker: 'Feisk Archive',
-      x: 3.2,
-      y: 27.8,
-      width: 8.6,
-      height: 48.6,
-      dotX: 9.3,
-      dotY: 48.8,
-      body: `A locked cabinet of production records, release notes and archived material from Feisk Productions.
-
-This is where visitors can discover the company history, past work and the foundation of the Feisk archive.`
-    },
     {
       id: 'wall-safe',
       label: 'Slate',
       title: 'Development Slate',
       kicker: 'In Development',
-      x: 20.8,
-      y: 31.2,
-      width: 10.3,
-      height: 22.4,
-      dotX: 26.0,
-      dotY: 41.4,
-      body: `The safe contains projects in development and post-production.
+      x: 20.5,
+      y: 20.2,
+      width: 12.1,
+      height: 14.1,
+      dotX: 27.4,
+      dotY: 26.9,
+      body: `The wall safe contains locked development material and future project notes.
 
 Feisk currently lists several upcoming feature projects, including Curi Makan, Writers, Send Tudes and Selendangs & Shotguns.`
     },
@@ -47,12 +32,12 @@ Feisk currently lists several upcoming feature projects, including Curi Makan, W
       label: 'Terminal',
       title: 'Feisk Terminal',
       kicker: 'Desktop Access',
-      x: 38.9,
-      y: 39.8,
-      width: 17.8,
-      height: 28.2,
-      dotX: 45.6,
-      dotY: 53.4,
+      x: 43.0,
+      y: 23.6,
+      width: 20.5,
+      height: 14.2,
+      dotX: 54.0,
+      dotY: 30.5,
       action: 'computer',
       body: `The old desktop terminal opens the Feisk archive operating system.`
     },
@@ -61,45 +46,45 @@ Feisk currently lists several upcoming feature projects, including Curi Makan, W
       label: 'Contact',
       title: 'Direct Line',
       kicker: 'Contact',
-      x: 29.0,
-      y: 51.0,
+      x: 31.2,
+      y: 28.6,
       width: 8.4,
-      height: 10.2,
-      dotX: 33.5,
-      dotY: 56.0,
+      height: 5.7,
+      dotX: 34.8,
+      dotY: 30.9,
       body: `The rotary telephone connects to Feisk Productions.
 
 Email: get.creative@feisk.com.my`
-    },
-    {
-      id: 'tikus-book',
-      label: 'Tikus',
-      title: 'Tikus',
-      kicker: 'Hidden Project File',
-      x: 0.4,
-      y: 76.8,
-      width: 23.6,
-      height: 22.8,
-      dotX: 12.5,
-      dotY: 90.6,
-      body: `A medieval-looking project book sits partly off-screen.
-
-This hotspot can be used for the Tikus microsite, hidden film materials, behind-the-scenes extras, or a special archive branch.`
     },
     {
       id: 'vault-door',
       label: 'Vault',
       title: 'Vault Door',
       kicker: 'Deep Archive',
-      x: 77.0,
-      y: 17.8,
-      width: 12.0,
-      height: 56.6,
-      dotX: 83.2,
-      dotY: 43.3,
+      x: 76.1,
+      y: 10.1,
+      width: 17.3,
+      height: 30.0,
+      dotX: 84.0,
+      dotY: 25.0,
       body: `The heavy vault door leads deeper into the Feisk archive.
 
 Future versions can use this as navigation to another room, a films section, or a secret archive level.`
+    },
+    {
+      id: 'filing-cabinet',
+      label: 'Records',
+      title: 'Company Records',
+      kicker: 'Feisk Archive',
+      x: 62.3,
+      y: 60.0,
+      width: 11.6,
+      height: 26.0,
+      dotX: 68.7,
+      dotY: 74.0,
+      body: `A locked cabinet of production records, release notes and archived material from Feisk Productions.
+
+This is where visitors can discover the company history, past work and the foundation of the Feisk archive.`
     }
   ],
 
